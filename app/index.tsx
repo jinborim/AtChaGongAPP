@@ -1,9 +1,13 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Link } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home</Text>
+      <Link href="/login" style={styles.button}>
+        로그인으로 이동
+      </Link>
     </View>
   );
 }
@@ -11,11 +15,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#25292e",
+    alignItems: "center",
+    justifyContent: "center",
   },
   text: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    color: "#fff",
+  },
+  button: {
+    fontSize: 20,
+    textDecorationLine: "underline",
+    color: "#fff",
   },
 });
