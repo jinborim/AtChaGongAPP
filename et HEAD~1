@@ -1,0 +1,36 @@
+[33mcommit aab18fb4be8e2622c3d9dad4c3202a1de821b5d6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/4[m[33m)[m
+Author: jinborim <jj8638638@naver.com>
+Date:   Wed Aug 12 17:28:00 2026 +0900
+
+    feat: 네비게이션 유저 이미지
+
+ app/index.tsx                                      |   2 [32m+[m[31m-[m
+ app/router/RestSetting.tsx                         |   2 [32m+[m
+ app/router/TimerSetting.tsx                        |   2 [32m+[m
+ app/router/homeSetting.tsx                         |   2 [32m+[m
+ src/assets/images/bg1.png                          | Bin [31m0[m -> [32m1063184[m bytes
+ src/assets/images/emptyCup.png                     | Bin [31m0[m -> [32m73320[m bytes
+ src/assets/images/homeIcon.png                     | Bin [31m0[m -> [32m96325[m bytes
+ src/assets/images/homebg.png                       | Bin [31m0[m -> [32m1192722[m bytes
+ src/assets/images/icecup1.png                      | Bin [31m0[m -> [32m356078[m bytes
+ src/assets/images/penguin1.png                     | Bin [31m0[m -> [32m156400[m bytes
+ src/assets/images/playButton.png                   | Bin [31m0[m -> [32m120273[m bytes
+ src/assets/images/recordIcon.png                   | Bin [31m0[m -> [32m46575[m bytes
+ src/assets/images/speechBubble.png                 | Bin [31m0[m -> [32m91718[m bytes
+ src/assets/images/userIcon.png                     | Bin [31m0[m -> [32m77733[m bytes
+ .../NavigationBar/HomeNavigationButton.tsx         |  24 [32m+[m
+ .../NavigationBar/MyPageNavigationButton.tsx       |  24 [32m+[m
+ src/components/NavigationBar/NavigationBar.tsx     |  34 [32m++[m
+ .../NavigationBar/StatisticsNavigationButton.tsx   |  24 [32m+[m
+ src/screens/home/MainHome.tsx                      | 663 [32m+++++++++++++++++++++[m
+ src/screens/home/PopupHome.tsx                     |  63 [32m++[m
+ src/screens/home/Recess.tsx                        |  49 [32m++[m
+ src/screens/home/components/MainHomeView.tsx       | 112 [32m++++[m
+ src/screens/home/components/RecessView.tsx         |  65 [32m++[m
+ src/screens/home/hooks/useFocusTimer.ts            |  94 [32m+++[m
+ src/screens/home/hooks/useRestTimer.ts             |  94 [32m+++[m
+ src/screens/home/services/focusRecordStorage.ts    |  42 [32m++[m
+ src/screens/timer/TimerSettingScreen.tsx           |  52 [32m++[m
+ src/screens/timer/components/TimerSettingView.tsx  | 164 [32m+++++[m
+ src/screens/timer/hooks/useTimerSettings.ts        | 110 [32m++++[m
+ 29 files changed, 1621 insertions(+), 1 deletion(-)

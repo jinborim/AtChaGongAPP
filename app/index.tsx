@@ -5,7 +5,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home</Text>
-      <Link href="/login" style={styles.button}>
+      <Link href="../router/homeSetting" style={styles.button}>
         로그인으로 이동
       </Link>
     </View>
