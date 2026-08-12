@@ -1,5 +1,7 @@
 // 메인 홈 퍼블리싱 화면
-import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   Image,
   ImageBackground,
@@ -13,6 +15,59 @@ import NavigationBar from "../../components/NavigationBar/NavigationBar";
 
 export default function StudyScreen() {
   const router = useRouter();
+  const [remainingMilliseconds, setRemainingMilliseconds] = useState(
+    25 * 60 * 1000
+  );
+  const [isRunning, setIsRunning] = useState(false);
+  const [endTime, setEndTime] = useState<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadFocusMinutes = async () => {
+        const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
+        const minutes = savedFocusMinutes
+          ? Math.min(120, Math.max(5, Number(savedFocusMinutes)))
+          : 25;
+
+        if (!isRunning) setRemainingMilliseconds(minutes * 60 * 1000);
+      };
+
+      loadFocusMinutes().catch((error) =>
+        console.log("집중 시간 불러오기 오류:", error)
+      );
+    }, [isRunning])
+  );
+
+  useEffect(() => {
+    if (!isRunning || endTime === null) return;
+
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, endTime - Date.now());
+      setRemainingMilliseconds(remaining);
+
+      if (remaining === 0) {
+        setIsRunning(false);
+        setEndTime(null);
+      }
+    }, 10);
+
+    return () => clearInterval(timer);
+  }, [endTime, isRunning]);
+
+  const minutes = Math.floor(remainingMilliseconds / 60000);
+  const seconds = Math.floor((remainingMilliseconds % 60000) / 1000);
+  const centiseconds = Math.floor((remainingMilliseconds % 1000) / 10);
+  const formattedTime = isRunning
+    ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+        2,
+        "0"
+      )}:${String(centiseconds).padStart(2, "0")}`
+    : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  const startTimer = () => {
+    setEndTime(Date.now() + remainingMilliseconds);
+    setIsRunning(true);
+  };
 
   return (
     <ImageBackground
@@ -43,10 +98,11 @@ export default function StudyScreen() {
         <View className="mt-12">
           <TouchableOpacity
             activeOpacity={0.7}
+            disabled={isRunning}
             onPress={() => router.push("../router/TimerSetting")}
           >
             <Text className="font-maru text-[52px] font-bold text-primary">
-              25:00
+              {formattedTime}
             </Text>
           </TouchableOpacity>
         </View>
@@ -59,7 +115,13 @@ export default function StudyScreen() {
           />
         </View>
 
-        <TouchableOpacity className="mt-4 h-[72px] w-[100px] items-center justify-center">
+        <TouchableOpacity
+          className={`mt-4 h-[72px] w-[100px] items-center justify-center ${
+            isRunning ? "opacity-0" : "opacity-100"
+          }`}
+          disabled={isRunning || remainingMilliseconds === 0}
+          onPress={startTimer}
+        >
           <Image
             source={require("../../assets/images/playButton.png")}
             className="h-[72px] w-[100px]"

@@ -1,6 +1,9 @@
 // 타이머 설정 퍼블리싱 화면
+import Header from "@/src/components/Header/Header";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ImageBackground,
   Text,
@@ -15,6 +18,10 @@ type SettingCardProps = {
   unit: string;
   adjustable?: boolean;
   cycleCount?: number;
+  onDecrease?: () => void;
+  onIncrease?: () => void;
+  decreaseDisabled?: boolean;
+  increaseDisabled?: boolean;
 };
 
 function SettingCard({
@@ -23,12 +30,16 @@ function SettingCard({
   unit,
   adjustable = false,
   cycleCount,
+  onDecrease,
+  onIncrease,
+  decreaseDisabled = false,
+  increaseDisabled = false,
 }: SettingCardProps) {
   return (
     <View
       className={`${
         cycleCount === undefined ? "mb-4" : "mb-3"
-      } h-[124px] w-[80%] self-center rounded-[12px] border border-gray-100 bg-[#FFFFFF] px-5 pt-5`}
+      } h-[124px] w-[80%] self-center rounded-[12px] border border-gray-100 bg-white px-5 pt-5`}
     >
       <View className="flex-row items-center">
         <View className="mr-2 h-4 w-4 rounded-full bg-secondary" />
@@ -42,8 +53,12 @@ function SettingCard({
       >
         {adjustable && (
           <TouchableOpacity
-            className="h-9 w-9 items-center justify-center rounded-full border border-gray-300"
+            className={`h-9 w-9 items-center justify-center rounded-full border border-gray-300 ${
+              decreaseDisabled ? "opacity-30" : ""
+            }`}
             activeOpacity={0.6}
+            disabled={decreaseDisabled}
+            onPress={onDecrease}
           >
             <Ionicons name="remove" size={24} color="#17386B" />
           </TouchableOpacity>
@@ -58,8 +73,12 @@ function SettingCard({
 
         {adjustable && (
           <TouchableOpacity
-            className="h-9 w-9 items-center justify-center rounded-full border border-gray-300"
+            className={`h-9 w-9 items-center justify-center rounded-full border border-gray-300 ${
+              increaseDisabled ? "opacity-30" : ""
+            }`}
             activeOpacity={0.6}
+            disabled={increaseDisabled}
+            onPress={onIncrease}
           >
             <Ionicons name="add" size={24} color="#17386B" />
           </TouchableOpacity>
@@ -86,6 +105,40 @@ function SettingCard({
 
 export default function TimerSettingScreen() {
   const router = useRouter();
+  const [focusMinutes, setFocusMinutes] = useState(25);
+  const [cycleCount, setCycleCount] = useState(1);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const [savedFocusMinutes, savedCycleCount] = await Promise.all([
+        AsyncStorage.getItem("focusMinutes"),
+        AsyncStorage.getItem("cycleCount"),
+      ]);
+
+      if (savedFocusMinutes) {
+        setFocusMinutes(Math.min(120, Math.max(5, Number(savedFocusMinutes))));
+      }
+      if (savedCycleCount) {
+        setCycleCount(Math.min(4, Math.max(1, Number(savedCycleCount))));
+      }
+    };
+
+    loadSettings().catch((error) =>
+      console.log("타이머 설정 불러오기 오류:", error)
+    );
+  }, []);
+
+  const saveSettings = async () => {
+    try {
+      await Promise.all([
+        AsyncStorage.setItem("focusMinutes", String(focusMinutes)),
+        AsyncStorage.setItem("cycleCount", String(cycleCount)),
+      ]);
+      router.back();
+    } catch (error) {
+      console.log("타이머 설정 저장 오류:", error);
+    }
+  };
 
   return (
     <ImageBackground
@@ -95,25 +148,27 @@ export default function TimerSettingScreen() {
     >
       <SafeAreaView className="relative flex-1">
         <View className="h-[60px] shrink-0 items-center justify-center">
-          <TouchableOpacity
-            className="absolute left-5 top-6 h-10 w-10 items-center justify-center"
-            activeOpacity={0.6}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="chevron-back" size={32} color="#17386B" />
-          </TouchableOpacity>
+          <Header title="타이머 설정" showBack />
 
-          <Text className="mt-8 font-maru text-[28px] text-primary">
+          {/* <Text className="mt-8 font-maru text-[28px] text-primary">
             타이머 설정
-          </Text>
+          </Text> */}
         </View>
 
-        <View className="w-full flex-1 pt-9">
+        <View className="w-full flex-1 pt-12">
           <SettingCard
             label="집중 시간"
-            value={25}
+            value={focusMinutes}
             unit="분"
             adjustable
+            decreaseDisabled={focusMinutes <= 5}
+            increaseDisabled={focusMinutes >= 120}
+            onDecrease={() =>
+              setFocusMinutes((previous) => Math.max(5, previous - 5))
+            }
+            onIncrease={() =>
+              setFocusMinutes((previous) => Math.min(120, previous + 5))
+            }
           />
           <SettingCard
             label="휴식 시간"
@@ -122,10 +177,18 @@ export default function TimerSettingScreen() {
           />
           <SettingCard
             label="반복 횟수"
-            value={1}
+            value={cycleCount}
             unit="회"
             adjustable
-            cycleCount={1}
+            cycleCount={cycleCount}
+            decreaseDisabled={cycleCount <= 1}
+            increaseDisabled={cycleCount >= 4}
+            onDecrease={() =>
+              setCycleCount((previous) => Math.max(1, previous - 1))
+            }
+            onIncrease={() =>
+              setCycleCount((previous) => Math.min(4, previous + 1))
+            }
           />
         </View>
 
@@ -133,6 +196,7 @@ export default function TimerSettingScreen() {
           <TouchableOpacity
             className="h-12 w-full items-center justify-center rounded-[8px] bg-primary"
             activeOpacity={0.6}
+            onPress={saveSettings}
           >
             <Text className="font-maru text-base text-white">저장하기</Text>
           </TouchableOpacity>
