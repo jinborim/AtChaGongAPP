@@ -109,13 +109,15 @@ export default function CoolingScreen() {
           얼음을 다시 냉장고에 넣는중...
         </Text>
 
-        <Image
-          source={require("../../assets/images/EmptyCup.png")}
-          className="h-[300px] w-[220px]"
-          resizeMode="contain"
-        />
+        <View className="flex-1 justify-center">
+          <Image
+            source={require("../../assets/images/EmptyCup.png")}
+            className="h-[300px] w-[220px]"
+            resizeMode="contain"
+          />
+        </View>
 
-        <NavigationBar fixedToBottom />
+        <NavigationBar />
       </SafeAreaView>
     </ImageBackground>
   );
