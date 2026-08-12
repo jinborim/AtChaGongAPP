@@ -1,9 +1,29 @@
-import { useRouter } from "expo-router";
+import { type Href, useRouter } from "expo-router";
 import { View } from "react-native";
 
-import HomeNavigationButton from "./HomeNavigationButton";
-import MyPageNavigationButton from "./MyPageNavigationButton";
-import StatisticsNavigationButton from "./StatisticsNavigationButton";
+import NavigationButton from "./NavigationButton";
+
+const NAVIGATION_ITEMS: {
+  label: string;
+  icon: number;
+  href: Href;
+}[] = [
+  {
+    label: "홈",
+    icon: require("../../assets/images/HomeIcon.png"),
+    href: "/router/homeSetting",
+  },
+  {
+    label: "통계",
+    icon: require("../../assets/images/RecordIcon.png"),
+    href: "/month",
+  },
+  {
+    label: "마이페이지",
+    icon: require("../../assets/images/UserIcon.png"),
+    href: "/mypage",
+  },
+];
 
 type NavigationBarProps = {
   fixedToBottom?: boolean;
@@ -20,15 +40,14 @@ export default function NavigationBar({
         fixedToBottom ? "absolute bottom-0" : ""
       }`}
     >
-      <HomeNavigationButton
-        onPress={() => router.push("/router/homeSetting")}
-      />
-      <StatisticsNavigationButton
-        onPress={() => router.push("/month")}
-      />
-      <MyPageNavigationButton
-        onPress={() => router.push("/mypage")}
-      />
+      {NAVIGATION_ITEMS.map((item) => (
+        <NavigationButton
+          key={item.href.toString()}
+          label={item.label}
+          icon={item.icon}
+          onPress={() => router.push(item.href)}
+        />
+      ))}
     </View>
   );
 }
