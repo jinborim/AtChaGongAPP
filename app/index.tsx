@@ -5,11 +5,14 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home</Text>
-      <Link href="/login" style={styles.button}>
-        로그인으로 이동
+      <Link href="/router/homeSetting" style={styles.button}>
+        메인홈으로 이동
       </Link>
       <Link href="/month" style={styles.button}>
         월별 통계로 이동
+      </Link>
+      <Link href="/login" style={styles.button}>
+        로그인으로 이동
       </Link>
       <Link href="/mypage" style={styles.button}>
         마이페이지로 이동
