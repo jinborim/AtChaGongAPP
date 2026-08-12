@@ -12,11 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
-import {
-  DEFAULT_FOCUS_MINUTES,
-  MAX_FOCUS_MINUTES,
-  MIN_FOCUS_MINUTES,
-} from "../../constants/timer";
+import { DEFAULT_FOCUS_MINUTES } from "../../constants/timer";
+import { parseStoredFocusMinutes } from "../../utils/timerSettings";
 import Complete from "./Complete";
 
 export default function StudyScreen() {
@@ -32,12 +29,7 @@ export default function StudyScreen() {
     useCallback(() => {
       const loadFocusMinutes = async () => {
         const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
-        const minutes = savedFocusMinutes
-          ? Math.min(
-              MAX_FOCUS_MINUTES,
-              Math.max(MIN_FOCUS_MINUTES, Number(savedFocusMinutes))
-            )
-          : DEFAULT_FOCUS_MINUTES;
+        const minutes = parseStoredFocusMinutes(savedFocusMinutes);
 
         setRemainingMilliseconds(minutes * 60 * 1000);
       };

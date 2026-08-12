@@ -22,6 +22,10 @@ import {
   MIN_CYCLE_COUNT,
   MIN_FOCUS_MINUTES,
 } from "../../constants/timer";
+import {
+  parseStoredCycleCount,
+  parseStoredFocusMinutes,
+} from "../../utils/timerSettings";
 
 type SettingCardProps = {
   label: string;
@@ -125,22 +129,8 @@ export default function TimerSettingScreen() {
         AsyncStorage.getItem("cycleCount"),
       ]);
 
-      if (savedFocusMinutes) {
-        setFocusMinutes(
-          Math.min(
-            MAX_FOCUS_MINUTES,
-            Math.max(MIN_FOCUS_MINUTES, Number(savedFocusMinutes))
-          )
-        );
-      }
-      if (savedCycleCount) {
-        setCycleCount(
-          Math.min(
-            MAX_CYCLE_COUNT,
-            Math.max(MIN_CYCLE_COUNT, Number(savedCycleCount))
-          )
-        );
-      }
+      setFocusMinutes(parseStoredFocusMinutes(savedFocusMinutes));
+      setCycleCount(parseStoredCycleCount(savedCycleCount));
     };
 
     loadSettings().catch((error) =>
