@@ -49,7 +49,7 @@ export default function StudyScreen() {
         setIsRunning(false);
         setEndTime(null);
       }
-    }, 10);
+    }, 50);
 
     return () => clearInterval(timer);
   }, [endTime, isRunning]);
