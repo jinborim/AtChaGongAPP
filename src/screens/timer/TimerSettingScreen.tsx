@@ -157,13 +157,7 @@ export default function TimerSettingScreen() {
       resizeMode="cover"
     >
       <SafeAreaView className="relative flex-1">
-        <View className="h-[60px] shrink-0 items-center justify-center">
-          <Header title="타이머 설정" showBack />
-
-          {/* <Text className="mt-8 font-maru text-[28px] text-primary">
-            타이머 설정
-          </Text> */}
-        </View>
+        <Header title="타이머 설정" showBack />
 
         <View className="w-full flex-1 pt-12">
           <SettingCard
