@@ -27,6 +27,8 @@ export default function StudyScreen() {
   const [remainingMilliseconds, setRemainingMilliseconds] = useState(
     DEFAULT_FOCUS_MINUTES * 60 * 1000
   );
+  const [configuredFocusMilliseconds, setConfiguredFocusMilliseconds] =
+    useState(DEFAULT_FOCUS_MINUTES * 60 * 1000);
   const [isRunning, setIsRunning] = useState(false);
   const [endTime, setEndTime] = useState<number | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -57,6 +59,7 @@ export default function StudyScreen() {
 
         setCycleCount(cycles);
         setCurrentCycle(Math.min(cycles, activeCycle));
+        setConfiguredFocusMilliseconds(duration);
         setRemainingMilliseconds(duration);
 
         if (autoStartFocus === "true") {
@@ -118,12 +121,9 @@ export default function StudyScreen() {
     setIsRunning(true);
   };
 
-  const closeCompleteModal = async () => {
-    const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
-    const minutes = parseStoredFocusMinutes(savedFocusMinutes);
-
+  const closeCompleteModal = () => {
     setCurrentCycle(MIN_CYCLE_COUNT);
-    setRemainingMilliseconds(minutes * 60 * 1000);
+    setRemainingMilliseconds(configuredFocusMilliseconds);
     setShowCompleteModal(false);
   };
 
@@ -197,11 +197,7 @@ export default function StudyScreen() {
 
         <Complete
           visible={showCompleteModal}
-          onClose={() => {
-            closeCompleteModal().catch((error) =>
-              console.log("완료 모달 닫기 오류:", error)
-            );
-          }}
+          onClose={closeCompleteModal}
         />
       </SafeAreaView>
     </ImageBackground>
