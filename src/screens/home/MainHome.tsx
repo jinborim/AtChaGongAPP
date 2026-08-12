@@ -99,7 +99,7 @@ export default function StudyScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             disabled={isRunning}
-            onPress={() => router.push("../router/TimerSetting")}
+            onPress={() => router.push("/router/TimerSetting")}
           >
             <Text className="font-maru text-[52px] font-bold text-primary">
               {formattedTime}

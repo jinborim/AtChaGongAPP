@@ -21,13 +21,13 @@ export default function NavigationBar({
       }`}
     >
       <HomeNavigationButton
-        onPress={() => router.push("/router/homeSetting")} // 나중에 수정
+        onPress={() => router.push("/router/homeSetting")}
       />
       <StatisticsNavigationButton
-        onPress={() => router.push("../router/StatisticsScreen")} // 나중에 수정
+        onPress={() => router.push("/month")}
       />
       <MyPageNavigationButton
-        onPress={() => router.push("../router/MyPageScreen")} //나중에 수정
+        onPress={() => router.push("/mypage")}
       />
     </View>
   );
