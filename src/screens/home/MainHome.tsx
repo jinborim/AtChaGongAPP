@@ -12,8 +12,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
-import { DEFAULT_FOCUS_MINUTES } from "../../constants/timer";
-import { parseStoredFocusMinutes } from "../../utils/timerSettings";
+import {
+  DEFAULT_FOCUS_MINUTES,
+  MIN_CYCLE_COUNT,
+} from "../../constants/timer";
+import {
+  parseStoredCycleCount,
+  parseStoredFocusMinutes,
+} from "../../utils/timerSettings";
 import Complete from "./Complete";
 
 export default function StudyScreen() {
@@ -24,18 +30,41 @@ export default function StudyScreen() {
   const [isRunning, setIsRunning] = useState(false);
   const [endTime, setEndTime] = useState<number | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [cycleCount, setCycleCount] = useState(MIN_CYCLE_COUNT);
+  const [currentCycle, setCurrentCycle] = useState(MIN_CYCLE_COUNT);
 
   useFocusEffect(
     useCallback(() => {
-      const loadFocusMinutes = async () => {
-        const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
+      const loadTimerSettings = async () => {
+        const [
+          savedFocusMinutes,
+          savedCycleCount,
+          savedCurrentCycle,
+          autoStartFocus,
+        ] = await Promise.all([
+          AsyncStorage.getItem("focusMinutes"),
+          AsyncStorage.getItem("cycleCount"),
+          AsyncStorage.getItem("currentCycle"),
+          AsyncStorage.getItem("autoStartFocus"),
+        ]);
         const minutes = parseStoredFocusMinutes(savedFocusMinutes);
+        const cycles = parseStoredCycleCount(savedCycleCount);
+        const activeCycle = parseStoredCycleCount(savedCurrentCycle);
+        const duration = minutes * 60 * 1000;
 
-        setRemainingMilliseconds(minutes * 60 * 1000);
+        setCycleCount(cycles);
+        setCurrentCycle(Math.min(cycles, activeCycle));
+        setRemainingMilliseconds(duration);
+
+        if (autoStartFocus === "true") {
+          await AsyncStorage.removeItem("autoStartFocus");
+          setEndTime(Date.now() + duration);
+          setIsRunning(true);
+        }
       };
 
-      loadFocusMinutes().catch((error) =>
-        console.log("집중 시간 불러오기 오류:", error)
+      loadTimerSettings().catch((error) =>
+        console.log("타이머 설정 불러오기 오류:", error)
       );
     }, [])
   );
@@ -48,14 +77,23 @@ export default function StudyScreen() {
       setRemainingMilliseconds(remaining);
 
       if (remaining === 0) {
+        clearInterval(timer);
         setIsRunning(false);
         setEndTime(null);
-        setShowCompleteModal(true);
+
+        if (currentCycle < cycleCount) {
+          router.replace("/router/RestSetting");
+        } else {
+          AsyncStorage.multiRemove(["currentCycle", "autoStartFocus"]).catch(
+            (error) => console.log("사이클 완료 정보 정리 오류:", error)
+          );
+          setShowCompleteModal(true);
+        }
       }
     }, 50);
 
     return () => clearInterval(timer);
-  }, [endTime, isRunning]);
+  }, [currentCycle, cycleCount, endTime, isRunning, router]);
 
   const minutes = Math.floor(remainingMilliseconds / 60000);
   const seconds = Math.floor((remainingMilliseconds % 60000) / 1000);
@@ -67,9 +105,19 @@ export default function StudyScreen() {
       )}:${String(centiseconds).padStart(2, "0")}`
     : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
-  const startTimer = () => {
+  const startTimer = async () => {
+    await AsyncStorage.setItem("currentCycle", String(currentCycle));
     setEndTime(Date.now() + remainingMilliseconds);
     setIsRunning(true);
+  };
+
+  const closeCompleteModal = async () => {
+    const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
+    const minutes = parseStoredFocusMinutes(savedFocusMinutes);
+
+    setCurrentCycle(MIN_CYCLE_COUNT);
+    setRemainingMilliseconds(minutes * 60 * 1000);
+    setShowCompleteModal(false);
   };
 
   return (
@@ -136,7 +184,11 @@ export default function StudyScreen() {
 
         <Complete
           visible={showCompleteModal}
-          onClose={() => setShowCompleteModal(false)}
+          onClose={() => {
+            closeCompleteModal().catch((error) =>
+              console.log("완료 모달 닫기 오류:", error)
+            );
+          }}
         />
       </SafeAreaView>
     </ImageBackground>
