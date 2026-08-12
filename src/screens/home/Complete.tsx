@@ -21,6 +21,7 @@ export default function Complete({
       visible={visible}
       transparent
       animationType="fade"
+      onRequestClose={onClose}
     >
       <View className="flex-1 items-center justify-center bg-black/50">
         <View

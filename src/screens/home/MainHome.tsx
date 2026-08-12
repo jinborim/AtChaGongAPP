@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
+import Complete from "./Complete";
 
 export default function StudyScreen() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function StudyScreen() {
   );
   const [isRunning, setIsRunning] = useState(false);
   const [endTime, setEndTime] = useState<number | null>(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -29,13 +31,13 @@ export default function StudyScreen() {
           ? Math.min(120, Math.max(5, Number(savedFocusMinutes)))
           : 25;
 
-        if (!isRunning) setRemainingMilliseconds(minutes * 60 * 1000);
+        setRemainingMilliseconds(minutes * 60 * 1000);
       };
 
       loadFocusMinutes().catch((error) =>
         console.log("집중 시간 불러오기 오류:", error)
       );
-    }, [isRunning])
+    }, [])
   );
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function StudyScreen() {
       if (remaining === 0) {
         setIsRunning(false);
         setEndTime(null);
+        setShowCompleteModal(true);
       }
     }, 50);
 
@@ -130,6 +133,11 @@ export default function StudyScreen() {
         </TouchableOpacity>
 
         <NavigationBar />
+
+        <Complete
+          visible={showCompleteModal}
+          onClose={() => setShowCompleteModal(false)}
+        />
       </SafeAreaView>
     </ImageBackground>
   );
