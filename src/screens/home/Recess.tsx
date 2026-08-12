@@ -112,10 +112,12 @@ export default function CoolingScreen() {
         <View className="flex-1 justify-center">
           <Image
             source={require("../../assets/images/EmptyCup.png")}
-            className="h-[300px] w-[220px]"
+            className="mt-7 h-[300px] w-[220px]"
             resizeMode="contain"
           />
         </View>
+
+        <View className="mt-4 h-[72px] w-[100px]" />
 
         <NavigationBar />
       </SafeAreaView>
