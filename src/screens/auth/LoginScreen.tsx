@@ -28,7 +28,7 @@ export default function LoginScreen() {
               items-center
               justify-center
               rounded-full
-              bg-[#FFFFFF]
+              bg-white
               active:bg-gray-100
             "
           onPress={() => {}}
@@ -74,7 +74,7 @@ export default function LoginScreen() {
               items-center
               justify-center
               rounded-full
-              bg-[#FFFFFF]
+              bg-white
               active:bg-gray-100
             "
           onPress={() => {}}

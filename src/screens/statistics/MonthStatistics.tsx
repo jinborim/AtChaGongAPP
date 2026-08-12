@@ -100,7 +100,7 @@ export default function MonthStatistics() {
         </View>
         <View className="relative mx-5 mt-8 h-[100px]">
           {/* 박스 배경 */}
-          <View className="absolute bottom-1 left-1 right-1 top-1 bg-[#FFFDF3]" />
+          <View className="absolute bottom-1 left-1 right-1 top-1 bg-white" />
 
           {/* 픽셀 테두리 */}
           <View className="absolute left-1 right-1 top-0 h-[2px] bg-primary" />
