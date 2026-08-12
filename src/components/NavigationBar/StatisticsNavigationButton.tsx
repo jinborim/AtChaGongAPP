@@ -15,7 +15,7 @@ export default function StatisticsNavigationButton({
       onPress={onPress}
     >
       <Image
-        source={require("../../assets/images/recordIcon.png")}
+        source={require("../../assets/images/RecordIcon.png")}
         className="h-[52px] w-[52px]"
         resizeMode="contain"
       />

@@ -71,19 +71,19 @@ export default function StudyScreen() {
 
   return (
     <ImageBackground
-      source={require("../../assets/images/homebg.png")}
+      source={require("../../assets/images/Homebg.png")}
       className="flex-1"
       resizeMode="cover"
     >
       <SafeAreaView className="flex-1 items-center">
         <View className="flex-row items-center">
           <Image
-            source={require("../../assets/images/penguin1.png")}
+            source={require("../../assets/images/Penguin1.png")}
             className="mr-3 h-20 w-20"
           />
 
           <ImageBackground
-            source={require("../../assets/images/speechBubble.png")}
+            source={require("../../assets/images/SpeechBubble.png")}
             className="h-[120px] w-[240px] items-center justify-center"
             resizeMode="contain"
           >
@@ -109,7 +109,7 @@ export default function StudyScreen() {
 
         <View className="flex-1 justify-center">
           <Image
-            source={require("../../assets/images/icecup1.png")}
+            source={require("../../assets/images/Icecup1.png")}
             className="mt-7 h-[300px] w-[220px]"
             resizeMode="contain"
           />
@@ -123,7 +123,7 @@ export default function StudyScreen() {
           onPress={startTimer}
         >
           <Image
-            source={require("../../assets/images/playButton.png")}
+            source={require("../../assets/images/PlayButton.png")}
             className="h-[72px] w-[100px]"
             resizeMode="contain"
           />

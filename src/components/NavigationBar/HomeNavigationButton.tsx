@@ -15,7 +15,7 @@ export default function HomeNavigationButton({
       onPress={onPress}
     >
       <Image
-        source={require("../../assets/images/homeIcon.png")}
+        source={require("../../assets/images/HomeIcon.png")}
         className="h-[52px] w-[52px]"
         resizeMode="contain"
       />

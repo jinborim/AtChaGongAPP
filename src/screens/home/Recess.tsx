@@ -10,7 +10,7 @@ const CURRENT_CYCLE = 1;
 export default function CoolingScreen() {
   return (
     <ImageBackground
-      source={require("../../assets/images/homebg.png")}
+      source={require("../../assets/images/Homebg.png")}
       className="flex-1"
       resizeMode="cover"
     >
@@ -45,7 +45,7 @@ export default function CoolingScreen() {
         </Text>
 
         <Image
-          source={require("../../assets/images/emptyCup.png")}
+          source={require("../../assets/images/EmptyCup.png")}
           className="h-[300px] w-[220px]"
           resizeMode="contain"
         />

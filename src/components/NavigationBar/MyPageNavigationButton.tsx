@@ -15,7 +15,7 @@ export default function MyPageNavigationButton({
       onPress={onPress}
     >
       <Image
-        source={require("../../assets/images/userIcon.png")}
+        source={require("../../assets/images/UserIcon.png")}
         className="h-[52px] w-[52px]"
         resizeMode="contain"
       />

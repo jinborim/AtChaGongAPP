@@ -29,7 +29,7 @@ export default function Complete({
 
           {/* 펭귄 이미지 */}
           <Image
-            source={require("../../assets/images/penguin1.png")}
+            source={require("../../assets/images/Penguin1.png")}
             className="mb-1 h-[100px] w-[100px]"
             resizeMode="contain"
           />

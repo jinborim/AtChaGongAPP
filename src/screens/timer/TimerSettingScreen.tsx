@@ -142,7 +142,7 @@ export default function TimerSettingScreen() {
 
   return (
     <ImageBackground
-      source={require("../../assets/images/bg1.png")}
+      source={require("../../assets/images/Background.png")}
       className="flex-1"
       resizeMode="cover"
     >
