@@ -1,4 +1,4 @@
-import { type Href, useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { View } from "react-native";
 
 import NavigationButton from "./NavigationButton";
@@ -6,7 +6,7 @@ import NavigationButton from "./NavigationButton";
 const NAVIGATION_ITEMS: {
   label: string;
   icon: number;
-  href: Href;
+  href: "/router/homeSetting" | "/month" | "/mypage";
 }[] = [
   {
     label: "홈",
@@ -33,6 +33,7 @@ export default function NavigationBar({
   fixedToBottom = false,
 }: NavigationBarProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <View
@@ -42,10 +43,12 @@ export default function NavigationBar({
     >
       {NAVIGATION_ITEMS.map((item) => (
         <NavigationButton
-          key={item.href.toString()}
+          key={item.href}
           label={item.label}
           icon={item.icon}
-          onPress={() => router.push(item.href)}
+          onPress={() => {
+            if (pathname !== item.href) router.navigate(item.href);
+          }}
         />
       ))}
     </View>
