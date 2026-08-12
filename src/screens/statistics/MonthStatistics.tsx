@@ -1,5 +1,5 @@
 import Header from "@/src/components/Header/Header";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ImageBackground, Pressable, Text, View } from "react-native";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -97,6 +97,40 @@ export default function MonthStatistics() {
           <Text className="font-maru color-primary text-sm">
             {month + 1}월 녹인 컵의 개수:
           </Text>
+        </View>
+        <View className="relative mx-5 mt-8 h-[100px]">
+          {/* 박스 배경 */}
+          <View className="absolute bottom-1 left-1 right-1 top-1 bg-[#FFFDF3]" />
+
+          {/* 픽셀 테두리 */}
+          <View className="absolute left-1 right-1 top-0 h-[2px] bg-primary" />
+          <View className="absolute bottom-0 left-1 right-1 h-[2px] bg-primary" />
+          <View className="absolute bottom-1 left-0 top-1 w-[2px] bg-primary" />
+          <View className="absolute bottom-1 right-0 top-1 w-[2px] bg-primary" />
+
+          {/* 픽셀 그림자 */}
+          <View className="absolute -bottom-1 left-2 right-0 h-[3px] bg-primary/20" />
+          <View className="absolute -right-1 bottom-2 top-2 w-[3px] bg-primary/20" />
+
+          {/* 내용 */}
+          <View className="flex-1 items-center justify-center pr-14">
+            <Text className="font-maru text-lg text-primary">
+              이번달 최대 집중 날
+            </Text>
+
+            <Text className="mt-1 font-maru text-xl text-primary">
+              {month + 1}월 9일
+            </Text>
+
+            <Text className="mt-2 font-maru text-sm text-primary">
+              총 시간: 1:50분 | 녹인 얼음: 8개
+            </Text>
+          </View>
+
+          {/* 별 */}
+          <View className="absolute right-5 top-1/2 -translate-y-1/2">
+            <Star size={42} color="#183765" fill="#FFB928" />
+          </View>
         </View>
       </View>
     </ImageBackground>
