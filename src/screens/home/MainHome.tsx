@@ -12,12 +12,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
+import {
+  DEFAULT_FOCUS_MINUTES,
+  MAX_FOCUS_MINUTES,
+  MIN_FOCUS_MINUTES,
+} from "../../constants/timer";
 import Complete from "./Complete";
 
 export default function StudyScreen() {
   const router = useRouter();
   const [remainingMilliseconds, setRemainingMilliseconds] = useState(
-    25 * 60 * 1000
+    DEFAULT_FOCUS_MINUTES * 60 * 1000
   );
   const [isRunning, setIsRunning] = useState(false);
   const [endTime, setEndTime] = useState<number | null>(null);
@@ -28,8 +33,11 @@ export default function StudyScreen() {
       const loadFocusMinutes = async () => {
         const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
         const minutes = savedFocusMinutes
-          ? Math.min(120, Math.max(5, Number(savedFocusMinutes)))
-          : 25;
+          ? Math.min(
+              MAX_FOCUS_MINUTES,
+              Math.max(MIN_FOCUS_MINUTES, Number(savedFocusMinutes))
+            )
+          : DEFAULT_FOCUS_MINUTES;
 
         setRemainingMilliseconds(minutes * 60 * 1000);
       };

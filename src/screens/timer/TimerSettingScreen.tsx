@@ -12,7 +12,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const MAX_CYCLE_COUNT = 4;
+import {
+  BREAK_MINUTES,
+  CYCLE_COUNT_STEP,
+  DEFAULT_FOCUS_MINUTES,
+  FOCUS_MINUTES_STEP,
+  MAX_CYCLE_COUNT,
+  MAX_FOCUS_MINUTES,
+  MIN_CYCLE_COUNT,
+  MIN_FOCUS_MINUTES,
+} from "../../constants/timer";
 
 type SettingCardProps = {
   label: string;
@@ -106,8 +115,8 @@ function SettingCard({
 
 export default function TimerSettingScreen() {
   const router = useRouter();
-  const [focusMinutes, setFocusMinutes] = useState(25);
-  const [cycleCount, setCycleCount] = useState(1);
+  const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
+  const [cycleCount, setCycleCount] = useState(MIN_CYCLE_COUNT);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -117,11 +126,19 @@ export default function TimerSettingScreen() {
       ]);
 
       if (savedFocusMinutes) {
-        setFocusMinutes(Math.min(120, Math.max(5, Number(savedFocusMinutes))));
+        setFocusMinutes(
+          Math.min(
+            MAX_FOCUS_MINUTES,
+            Math.max(MIN_FOCUS_MINUTES, Number(savedFocusMinutes))
+          )
+        );
       }
       if (savedCycleCount) {
         setCycleCount(
-          Math.min(MAX_CYCLE_COUNT, Math.max(1, Number(savedCycleCount)))
+          Math.min(
+            MAX_CYCLE_COUNT,
+            Math.max(MIN_CYCLE_COUNT, Number(savedCycleCount))
+          )
         );
       }
     };
@@ -164,18 +181,22 @@ export default function TimerSettingScreen() {
             value={focusMinutes}
             unit="분"
             adjustable
-            decreaseDisabled={focusMinutes <= 5}
-            increaseDisabled={focusMinutes >= 120}
+            decreaseDisabled={focusMinutes <= MIN_FOCUS_MINUTES}
+            increaseDisabled={focusMinutes >= MAX_FOCUS_MINUTES}
             onDecrease={() =>
-              setFocusMinutes((previous) => Math.max(5, previous - 5))
+              setFocusMinutes((previous) =>
+                Math.max(MIN_FOCUS_MINUTES, previous - FOCUS_MINUTES_STEP)
+              )
             }
             onIncrease={() =>
-              setFocusMinutes((previous) => Math.min(120, previous + 5))
+              setFocusMinutes((previous) =>
+                Math.min(MAX_FOCUS_MINUTES, previous + FOCUS_MINUTES_STEP)
+              )
             }
           />
           <SettingCard
             label="휴식 시간"
-            value={5}
+            value={BREAK_MINUTES}
             unit="분 고정"
           />
           <SettingCard
@@ -184,14 +205,16 @@ export default function TimerSettingScreen() {
             unit="회"
             adjustable
             cycleCount={cycleCount}
-            decreaseDisabled={cycleCount <= 1}
+            decreaseDisabled={cycleCount <= MIN_CYCLE_COUNT}
             increaseDisabled={cycleCount >= MAX_CYCLE_COUNT}
             onDecrease={() =>
-              setCycleCount((previous) => Math.max(1, previous - 1))
+              setCycleCount((previous) =>
+                Math.max(MIN_CYCLE_COUNT, previous - CYCLE_COUNT_STEP)
+              )
             }
             onIncrease={() =>
               setCycleCount((previous) =>
-                Math.min(MAX_CYCLE_COUNT, previous + 1)
+                Math.min(MAX_CYCLE_COUNT, previous + CYCLE_COUNT_STEP)
               )
             }
           />
