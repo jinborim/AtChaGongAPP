@@ -109,8 +109,8 @@ export default function MonthStatistics() {
           <View className="absolute bottom-1 right-0 top-1 w-[2px] bg-primary" />
 
           {/* 픽셀 그림자 */}
-          <View className="absolute -bottom-1 left-2 right-0 h-[3px] bg-primary/20" />
-          <View className="absolute -right-1 bottom-2 top-2 w-[3px] bg-primary/20" />
+          <View className="absolute -bottom-1 left-2 right-0 h-[3px] bg-gray-100" />
+          <View className="absolute -right-1 bottom-2 top-2 w-[3px] bg-gray-100" />
 
           {/* 내용 */}
           <View className="flex-1 items-center justify-center pr-14">
