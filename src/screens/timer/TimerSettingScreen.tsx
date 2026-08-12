@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const MAX_CYCLE_COUNT = 4;
+
 type SettingCardProps = {
   label: string;
   value: number;
@@ -87,14 +89,13 @@ function SettingCard({
 
       {cycleCount !== undefined && (
         <View className="mt-3 flex-row items-center justify-between px-0.5">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {Array.from({ length: MAX_CYCLE_COUNT }).map((_, index) => (
             <View
               key={index}
               className={[
                 "h-1 w-[23%] rounded-full",
                 index < cycleCount ? "bg-primary" : "bg-primary/25",
               ].join(" ")}
-              style={{ opacity: index < cycleCount ? 1 : 0.25 }}
             />
           ))}
         </View>
@@ -119,7 +120,9 @@ export default function TimerSettingScreen() {
         setFocusMinutes(Math.min(120, Math.max(5, Number(savedFocusMinutes))));
       }
       if (savedCycleCount) {
-        setCycleCount(Math.min(4, Math.max(1, Number(savedCycleCount))));
+        setCycleCount(
+          Math.min(MAX_CYCLE_COUNT, Math.max(1, Number(savedCycleCount)))
+        );
       }
     };
 
@@ -182,12 +185,14 @@ export default function TimerSettingScreen() {
             adjustable
             cycleCount={cycleCount}
             decreaseDisabled={cycleCount <= 1}
-            increaseDisabled={cycleCount >= 4}
+            increaseDisabled={cycleCount >= MAX_CYCLE_COUNT}
             onDecrease={() =>
               setCycleCount((previous) => Math.max(1, previous - 1))
             }
             onIncrease={() =>
-              setCycleCount((previous) => Math.min(4, previous + 1))
+              setCycleCount((previous) =>
+                Math.min(MAX_CYCLE_COUNT, previous + 1)
+              )
             }
           />
         </View>
