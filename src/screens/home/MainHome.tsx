@@ -32,9 +32,12 @@ export default function StudyScreen() {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [cycleCount, setCycleCount] = useState(MIN_CYCLE_COUNT);
   const [currentCycle, setCurrentCycle] = useState(MIN_CYCLE_COUNT);
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
+      setIsSettingsLoaded(false);
+
       const loadTimerSettings = async () => {
         const [
           savedFocusMinutes,
@@ -63,9 +66,11 @@ export default function StudyScreen() {
         }
       };
 
-      loadTimerSettings().catch((error) =>
-        console.log("타이머 설정 불러오기 오류:", error)
-      );
+      loadTimerSettings()
+        .catch((error) =>
+          console.log("타이머 설정 불러오기 오류:", error)
+        )
+        .finally(() => setIsSettingsLoaded(true));
     }, [])
   );
 
@@ -106,6 +111,8 @@ export default function StudyScreen() {
     : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
   const startTimer = async () => {
+    if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
+
     await AsyncStorage.setItem("currentCycle", String(currentCycle));
     setEndTime(Date.now() + remainingMilliseconds);
     setIsRunning(true);
@@ -168,9 +175,15 @@ export default function StudyScreen() {
 
         <TouchableOpacity
           className={`mt-4 h-[72px] w-[100px] items-center justify-center ${
-            isRunning ? "opacity-0" : "opacity-100"
+            isRunning
+              ? "opacity-0"
+              : isSettingsLoaded
+                ? "opacity-100"
+                : "opacity-50"
           }`}
-          disabled={isRunning || remainingMilliseconds === 0}
+          disabled={
+            !isSettingsLoaded || isRunning || remainingMilliseconds === 0
+          }
           onPress={startTimer}
         >
           <Image
