@@ -46,7 +46,7 @@ export default function Onboarding2() {
               resizeMode="contain"
             />
 
-            <Text className="mt-[18px] text-center font-maru text-[24px] leading-[28px] text-primary">
+            <Text className="mt-[18px] text-center font-maru text-[28px] leading-[36px] text-primary">
               집중을 시작하면 {"\n"}얼음이 녹기 시작해요.
             </Text>
             <Text className="mt-[18px] text-center font-maru text-[16px] leading-[24px] text-gray-300">
@@ -56,16 +56,16 @@ export default function Onboarding2() {
           </View>
 
           <View
-            className="absolute bottom-[112px] flex-row items-center gap-5"
+            className="absolute bottom-[160px] flex-row items-center gap-8"
             accessibilityLabel="온보딩 2/4"
           >
-            <View className="h-4 w-4 rounded-full bg-gray-300" />
-            <View className="h-4 w-[40px] rounded-full bg-secondary" />
-            <View className="h-4 w-4 rounded-full bg-gray-300" />
-            <View className="h-4 w-4 rounded-full bg-gray-300" />
+            <View className="h-5 w-5 rounded-full bg-gray-300" />
+            <View className="h-5 w-[52px] rounded-full bg-secondary" />
+            <View className="h-5 w-5 rounded-full bg-gray-300" />
+            <View className="h-5 w-5 rounded-full bg-gray-300" />
           </View>
 
-          <View className="absolute bottom-4 left-7 right-7 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
+          <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/onboarding.3")} 
