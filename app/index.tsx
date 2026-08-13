@@ -17,6 +17,9 @@ export default function HomeScreen() {
       <Link href="/onboarding.1" style={styles.button}>
         온보딩으로 이동
       </Link>
+       <Link href="/admin.1" style={styles.button}>
+        어드민으로 이동
+      </Link>
     </View>
   );
 }
