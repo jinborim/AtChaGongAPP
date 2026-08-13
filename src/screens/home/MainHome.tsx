@@ -1,8 +1,14 @@
 // 메인 홈 퍼블리싱 화면
 import CustomModal from "@/src/components/Modal/CustomModal";
+import {
+  getStatisticsSummary,
+  type StatisticsSummary,
+} from "@/src/features/statistics";
+import { getTimerSettings, type Beverage } from "@/src/features/timer";
+import { getMe } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Image,
   ImageBackground,
@@ -14,9 +20,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import { DEFAULT_FOCUS_MINUTES, MIN_CYCLE_COUNT } from "../../constants/timer";
 import {
+  normalizeCycleCount,
+  normalizeFocusMinutes,
   parseStoredCycleCount,
   parseStoredFocusMinutes,
 } from "../../utils/timerSettings";
+
+const DEFAULT_NICKNAME = "사용자";
 
 export default function StudyScreen() {
   const router = useRouter();
@@ -29,9 +39,21 @@ export default function StudyScreen() {
   const [cycleCount, setCycleCount] = useState(MIN_CYCLE_COUNT);
   const [currentCycle, setCurrentCycle] = useState(MIN_CYCLE_COUNT);
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+  const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
+  const [beverage, setBeverage] = useState<Beverage | null>(null);
+  const [todaySummary, setTodaySummary] = useState<StatisticsSummary | null>(
+    null,
+  );
+  const isRunningRef = useRef(isRunning);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
 
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+
       setIsSettingsLoaded(false);
 
       const loadTimerSettings = async () => {
@@ -51,6 +73,8 @@ export default function StudyScreen() {
         const activeCycle = parseStoredCycleCount(savedCurrentCycle);
         const duration = minutes * 60 * 1000;
 
+        if (!isActive) return;
+
         setCycleCount(cycles);
         setCurrentCycle(Math.min(cycles, activeCycle));
         setRemainingMilliseconds(duration);
@@ -60,11 +84,59 @@ export default function StudyScreen() {
           setEndTime(Date.now() + duration);
           setIsRunning(true);
         }
+
+        try {
+          const [me, timerSettings, statisticsSummary] = await Promise.all([
+            getMe(),
+            getTimerSettings(),
+            getStatisticsSummary("TODAY"),
+          ]);
+
+          if (!isActive) return;
+
+          const serverFocusMinutes = normalizeFocusMinutes(
+            timerSettings.focusMinutes,
+          );
+          const serverCycleCount = normalizeCycleCount(
+            timerSettings.cycleCount,
+          );
+          const serverDuration = serverFocusMinutes * 60 * 1000;
+
+          setNickname(me.nickname || DEFAULT_NICKNAME);
+          setBeverage(timerSettings.beverage);
+          setTodaySummary(statisticsSummary);
+          setCycleCount(serverCycleCount);
+          setCurrentCycle((previous) =>
+            Math.min(serverCycleCount, previous),
+          );
+
+          if (!isRunningRef.current) {
+            setRemainingMilliseconds(serverDuration);
+          }
+
+          await Promise.all([
+            AsyncStorage.setItem(
+              "focusMinutes",
+              String(serverFocusMinutes),
+            ),
+            AsyncStorage.setItem("cycleCount", String(serverCycleCount)),
+          ]);
+        } catch (error) {
+          console.log("홈 서버 데이터 불러오기 오류:", error);
+        }
       };
 
       loadTimerSettings()
         .catch((error) => console.log("타이머 설정 불러오기 오류:", error))
-        .finally(() => setIsSettingsLoaded(true));
+        .finally(() => {
+          if (isActive) {
+            setIsSettingsLoaded(true);
+          }
+        });
+
+      return () => {
+        isActive = false;
+      };
     }, []),
   );
 
@@ -103,6 +175,9 @@ export default function StudyScreen() {
         "0",
       )}:${String(centiseconds).padStart(2, "0")}`
     : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const focusedMinutes = Math.floor(
+    (todaySummary?.totalFocusedSeconds ?? 0) / 60,
+  );
 
   const startTimer = async () => {
     if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
@@ -140,7 +215,7 @@ export default function StudyScreen() {
             resizeMode="contain"
           >
             <Text className="font-maru text-base leading-6 text-primary">
-              안녕하세요 사용자님{"\n"}
+              안녕하세요 {nickname}님{"\n"}
               음료가 준비되었어요.{"\n"}
               함께 얼음을 녹여 볼까요?
             </Text>
@@ -168,7 +243,7 @@ export default function StudyScreen() {
         </View>
 
         <TouchableOpacity
-          className={`mt-4 h-[72px] w-[100px] items-center justify-center ${
+          className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
             isRunning
               ? "opacity-0"
               : isSettingsLoaded
