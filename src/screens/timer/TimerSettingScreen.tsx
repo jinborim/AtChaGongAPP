@@ -1,15 +1,10 @@
 // 타이머 설정 퍼블리싱 화면
 import Header from "@/src/components/Header/Header";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ImageBackground,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -134,7 +129,7 @@ export default function TimerSettingScreen() {
     };
 
     loadSettings().catch((error) =>
-      console.log("타이머 설정 불러오기 오류:", error)
+      console.log("타이머 설정 불러오기 오류:", error),
     );
   }, []);
 
@@ -169,20 +164,16 @@ export default function TimerSettingScreen() {
             increaseDisabled={focusMinutes >= MAX_FOCUS_MINUTES}
             onDecrease={() =>
               setFocusMinutes((previous) =>
-                Math.max(MIN_FOCUS_MINUTES, previous - FOCUS_MINUTES_STEP)
+                Math.max(MIN_FOCUS_MINUTES, previous - FOCUS_MINUTES_STEP),
               )
             }
             onIncrease={() =>
               setFocusMinutes((previous) =>
-                Math.min(MAX_FOCUS_MINUTES, previous + FOCUS_MINUTES_STEP)
+                Math.min(MAX_FOCUS_MINUTES, previous + FOCUS_MINUTES_STEP),
               )
             }
           />
-          <SettingCard
-            label="휴식 시간"
-            value={BREAK_MINUTES}
-            unit="분 고정"
-          />
+          <SettingCard label="휴식 시간" value={BREAK_MINUTES} unit="분 고정" />
           <SettingCard
             label="반복 횟수"
             value={cycleCount}
@@ -193,18 +184,18 @@ export default function TimerSettingScreen() {
             increaseDisabled={cycleCount >= MAX_CYCLE_COUNT}
             onDecrease={() =>
               setCycleCount((previous) =>
-                Math.max(MIN_CYCLE_COUNT, previous - CYCLE_COUNT_STEP)
+                Math.max(MIN_CYCLE_COUNT, previous - CYCLE_COUNT_STEP),
               )
             }
             onIncrease={() =>
               setCycleCount((previous) =>
-                Math.min(MAX_CYCLE_COUNT, previous + CYCLE_COUNT_STEP)
+                Math.min(MAX_CYCLE_COUNT, previous + CYCLE_COUNT_STEP),
               )
             }
           />
         </View>
 
-        <View className="absolute bottom-4 w-[80%] self-center">
+        <View className="absolute bottom-4 w-[80%] self-center pb-10">
           <TouchableOpacity
             className="h-12 w-full items-center justify-center rounded-[8px] bg-primary"
             activeOpacity={0.6}

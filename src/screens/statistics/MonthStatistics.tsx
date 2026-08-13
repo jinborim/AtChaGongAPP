@@ -1,4 +1,5 @@
 import Header from "@/src/components/Header/Header";
+import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ImageBackground, Pressable, Text, View } from "react-native";
@@ -77,7 +78,7 @@ export default function MonthStatistics() {
             const day = index + 1;
 
             return (
-              <View key={day} className="mb-6 w-[14.285%] items-center">
+              <View key={day} className="mb-5 w-[14.285%] items-center">
                 <View className="relative h-10 w-10">
                   {/* 내부 배경 */}
                   <View className="absolute bottom-1 left-1 right-1 top-1 bg-gray-100" />
@@ -98,7 +99,7 @@ export default function MonthStatistics() {
             {month + 1}월 녹인 컵의 개수:
           </Text>
         </View>
-        <View className="relative mx-5 mt-8 h-[100px]">
+        <View className="relative mx-5 mt-5 h-[100px]">
           {/* 박스 배경 */}
           <View className="absolute bottom-1 left-1 right-1 top-1 bg-white" />
 
@@ -133,6 +134,7 @@ export default function MonthStatistics() {
           </View>
         </View>
       </View>
+      <NavigationBar />
     </ImageBackground>
   );
 }

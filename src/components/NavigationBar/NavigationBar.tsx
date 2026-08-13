@@ -25,22 +25,12 @@ const NAVIGATION_ITEMS: {
   },
 ];
 
-type NavigationBarProps = {
-  fixedToBottom?: boolean;
-};
-
-export default function NavigationBar({
-  fixedToBottom = false,
-}: NavigationBarProps) {
+export default function NavigationBar() {
   const router = useRouter();
   const pathname = usePathname();
 
   return (
-    <View
-      className={`h-[100px] w-full flex-row items-end justify-around pb-3 ${
-        fixedToBottom ? "absolute bottom-0" : ""
-      }`}
-    >
+    <View className="absolute bottom-0 h-[100px] w-full flex-row items-end justify-around pb-10">
       {NAVIGATION_ITEMS.map((item) => (
         <NavigationButton
           key={item.href}

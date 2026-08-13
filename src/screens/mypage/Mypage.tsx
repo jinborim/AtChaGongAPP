@@ -1,3 +1,4 @@
+import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import { ChevronRight, Pencil } from "lucide-react-native";
 import { Image, ImageBackground, Pressable, Text, View } from "react-native";
 const PRIMARY = "#183765";
@@ -103,6 +104,7 @@ export default function Mypage() {
           <Text className="font-maru text-gray-300">회원탈퇴</Text>
         </View>
       </View>
+      <NavigationBar />
     </ImageBackground>
   );
 }
