@@ -1,18 +1,14 @@
 import { sendJsonRequest } from "./http";
 import { parseApiResponse } from "./response";
 import {
+  AuthTokens,
   clearAuthTokens,
   getRefreshToken,
   saveAuthTokensIfRefreshTokenMatches,
 } from "../tokenStorage";
 import { ApiError } from "../types";
 
-type ReissueResponse = {
-  accessToken: string;
-  refreshToken: string;
-};
-
-const reissuePromises = new Map<string, Promise<ReissueResponse>>();
+const reissuePromises = new Map<string, Promise<AuthTokens>>();
 
 /**
  * refresh token으로 access token을 재발급합니다.
@@ -42,7 +38,7 @@ export async function reissueTokens() {
       body: { refreshToken },
       headers: { "Content-Type": "application/json" },
     });
-    const tokens = await parseApiResponse<ReissueResponse>(response);
+    const tokens = await parseApiResponse<AuthTokens>(response);
     const didSaveTokens = await saveAuthTokensIfRefreshTokenMatches(
       tokens,
       refreshToken,
