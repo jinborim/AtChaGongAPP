@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/Icecup3.png");
+const ICE_CUP = require("../../assets/images/IceCup3.png");
 
 export default function Onboarding3() {
   return (
@@ -24,7 +24,7 @@ export default function Onboarding3() {
 
       <SafeAreaView className="flex-1" style={{ flex: 1 }}>
         <View
-          className="relative flex-1 items-center px-7 pt-[34px]"
+          className="relative flex-1 items-center px-7 pt-[32px]"
           style={{ flex: 1 }}
         >
           <Pressable

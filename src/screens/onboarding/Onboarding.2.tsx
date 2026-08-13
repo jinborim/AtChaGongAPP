@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/Icecup2.png");
+const ICE_CUP = require("../../assets/images/IceCup2.png");
 
 export default function Onboarding2() {
   return (
