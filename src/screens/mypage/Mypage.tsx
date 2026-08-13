@@ -30,6 +30,9 @@ export default function Mypage() {
   const handlePressPrivacyPolicy = () => {
     router.push("/mypage/privacy");
   };
+  const handlePressNoticePage = () => {
+    router.push("/notice");
+  };
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -82,7 +85,10 @@ export default function Mypage() {
             </View>
 
             {/* 공지사항 */}
-            <View className="h-16 flex-row items-center border-b-2 border-primary px-5">
+            <TouchableOpacity
+              className="h-16 flex-row items-center border-b-2 border-primary px-5"
+              onPress={handlePressNoticePage}
+            >
               <Image
                 source={require("../../assets/images/Notice.png")}
                 className="absolute left-5 h-[28px] w-[28px]"
@@ -93,7 +99,7 @@ export default function Mypage() {
               </Text>
 
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
-            </View>
+            </TouchableOpacity>
 
             {/* 개인정보 처리 방침 */}
             <TouchableOpacity
