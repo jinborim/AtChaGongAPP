@@ -12,12 +12,7 @@ type ReissueResponse = {
   refreshToken: string;
 };
 
-type ReissueState = {
-  refreshToken: string;
-  promise: Promise<ReissueResponse>;
-};
-
-let reissueState: ReissueState | null = null;
+const reissuePromises = new Map<string, Promise<ReissueResponse>>();
 
 /**
  * refresh token으로 access token을 재발급합니다.
@@ -36,8 +31,9 @@ export async function reissueTokens() {
     });
   }
 
-  if (reissueState?.refreshToken === refreshToken) {
-    return reissueState.promise;
+  const existingPromise = reissuePromises.get(refreshToken);
+  if (existingPromise) {
+    return existingPromise;
   }
 
   const reissuePromise = (async () => {
@@ -62,15 +58,12 @@ export async function reissueTokens() {
 
     return tokens;
   })().finally(() => {
-    if (reissueState?.promise === reissuePromise) {
-      reissueState = null;
+    if (reissuePromises.get(refreshToken) === reissuePromise) {
+      reissuePromises.delete(refreshToken);
     }
   });
 
-  reissueState = {
-    refreshToken,
-    promise: reissuePromise,
-  };
+  reissuePromises.set(refreshToken, reissuePromise);
 
   return reissuePromise;
 }
