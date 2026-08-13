@@ -28,7 +28,7 @@ export default function CoolingScreen() {
       const cycles = parseStoredCycleCount(savedCycleCount);
       const activeCycle = Math.min(
         cycles,
-        parseStoredCycleCount(savedCurrentCycle)
+        parseStoredCycleCount(savedCurrentCycle),
       );
 
       setCycleCount(cycles);
@@ -38,7 +38,7 @@ export default function CoolingScreen() {
     };
 
     startRest().catch((error) =>
-      console.log("휴식 설정 불러오기 오류:", error)
+      console.log("휴식 설정 불러오기 오류:", error),
     );
   }, []);
 
@@ -70,12 +70,12 @@ export default function CoolingScreen() {
   const seconds = Math.floor((remainingMilliseconds % 60000) / 1000);
   const centiseconds = Math.floor((remainingMilliseconds % 1000) / 10);
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(
-    seconds
+    seconds,
   ).padStart(2, "0")}:${String(centiseconds).padStart(2, "0")}`;
 
   return (
     <ImageBackground
-      source={require("../../assets/images/Homebg.png")}
+      source={require("../../assets/images/HomeBg.png")}
       className="flex-1"
       resizeMode="cover"
     >

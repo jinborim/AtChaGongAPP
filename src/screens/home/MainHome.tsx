@@ -12,10 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
-import {
-  DEFAULT_FOCUS_MINUTES,
-  MIN_CYCLE_COUNT,
-} from "../../constants/timer";
+import { DEFAULT_FOCUS_MINUTES, MIN_CYCLE_COUNT } from "../../constants/timer";
 import {
   parseStoredCycleCount,
   parseStoredFocusMinutes,
@@ -25,7 +22,7 @@ import Complete from "./Complete";
 export default function StudyScreen() {
   const router = useRouter();
   const [remainingMilliseconds, setRemainingMilliseconds] = useState(
-    DEFAULT_FOCUS_MINUTES * 60 * 1000
+    DEFAULT_FOCUS_MINUTES * 60 * 1000,
   );
   const [isRunning, setIsRunning] = useState(false);
   const [endTime, setEndTime] = useState<number | null>(null);
@@ -67,11 +64,9 @@ export default function StudyScreen() {
       };
 
       loadTimerSettings()
-        .catch((error) =>
-          console.log("타이머 설정 불러오기 오류:", error)
-        )
+        .catch((error) => console.log("타이머 설정 불러오기 오류:", error))
         .finally(() => setIsSettingsLoaded(true));
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -90,7 +85,7 @@ export default function StudyScreen() {
           router.replace("/router/RestSetting");
         } else {
           AsyncStorage.multiRemove(["currentCycle", "autoStartFocus"]).catch(
-            (error) => console.log("사이클 완료 정보 정리 오류:", error)
+            (error) => console.log("사이클 완료 정보 정리 오류:", error),
           );
           setShowCompleteModal(true);
         }
@@ -106,7 +101,7 @@ export default function StudyScreen() {
   const formattedTime = isRunning
     ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
         2,
-        "0"
+        "0",
       )}:${String(centiseconds).padStart(2, "0")}`
     : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
@@ -129,12 +124,12 @@ export default function StudyScreen() {
 
   return (
     <ImageBackground
-      source={require("../../assets/images/Homebg.png")}
+      source={require("../../assets/images/HomeBg.png")}
       className="flex-1"
       resizeMode="cover"
     >
       <SafeAreaView className="flex-1 items-center">
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mt-10">
           <Image
             source={require("../../assets/images/Penguin1.png")}
             className="mr-3 h-20 w-20"
@@ -153,22 +148,22 @@ export default function StudyScreen() {
           </ImageBackground>
         </View>
 
-        <View className="mt-12">
+        <View>
           <TouchableOpacity
             activeOpacity={0.7}
             disabled={isRunning}
             onPress={() => router.push("/router/TimerSetting")}
           >
-            <Text className="font-maru text-[52px] font-bold text-primary">
+            <Text className="font-maru mt-10 text-[52px] text-primary">
               {formattedTime}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <View className="flex-1 justify-center">
+        <View className="justify-center">
           <Image
-            source={require("../../assets/images/Icecup1.png")}
-            className="mt-7 h-[300px] w-[220px]"
+            source={require("../../assets/images/IceCup1.png")}
+            className="h-[300px] w-[220px]"
             resizeMode="contain"
           />
         </View>
@@ -193,17 +188,16 @@ export default function StudyScreen() {
           />
         </TouchableOpacity>
 
-        <NavigationBar />
-
         <Complete
           visible={showCompleteModal}
           onClose={() => {
             closeCompleteModal().catch((error) =>
-              console.log("완료 모달 닫기 오류:", error)
+              console.log("완료 모달 닫기 오류:", error),
             );
           }}
         />
       </SafeAreaView>
+      <NavigationBar />
     </ImageBackground>
   );
 }
