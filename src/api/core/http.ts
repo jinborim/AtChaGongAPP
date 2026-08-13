@@ -16,8 +16,10 @@ export async function sendJsonRequest(
   endpoint: string,
   { method, body, query, headers }: SendJsonRequestOptions,
 ) {
+  const url = buildApiUrl(endpoint, query);
+
   try {
-    return await fetch(buildApiUrl(endpoint, query), {
+    return await fetch(url, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

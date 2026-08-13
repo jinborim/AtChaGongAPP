@@ -3,7 +3,7 @@ import { parseApiResponse } from "./response";
 import {
   clearAuthTokens,
   getRefreshToken,
-  saveAuthTokens,
+  saveAuthTokensIfRefreshTokenMatches,
 } from "../tokenStorage";
 import { ApiError } from "../types";
 
@@ -38,8 +38,19 @@ export async function reissueTokens() {
         headers: { "Content-Type": "application/json" },
       });
       const tokens = await parseApiResponse<ReissueResponse>(response);
+      const didSaveTokens = await saveAuthTokensIfRefreshTokenMatches(
+        tokens,
+        refreshToken,
+      );
 
-      await saveAuthTokens(tokens);
+      if (!didSaveTokens) {
+        throw new ApiError({
+          status: 401,
+          code: "AUTH_SESSION_CHANGED",
+          message: "Authentication session changed during token reissue.",
+        });
+      }
+
       return tokens;
     })().finally(() => {
       reissuePromise = null;
