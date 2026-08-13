@@ -1,6 +1,70 @@
-import { Image, ImageBackground, Pressable, Text, View } from "react-native";
+import { useSocialProviderLogin } from "@/src/features/auth/hooks";
+import {
+  isDevAuthTokenLoginEnabled,
+  loginWithDevAuthTokens,
+} from "@/src/features/auth/services";
+import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
+import { useRouter } from "expo-router";
+import { useCallback } from "react";
+import {
+  Alert,
+  Image,
+  ImageBackground,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
 export default function LoginScreen() {
+  const router = useRouter();
+
+  const handleLoginSuccess = useCallback(
+    ({ isOnboardingCompleted }: { isOnboardingCompleted: boolean }) => {
+      router.replace(
+        isOnboardingCompleted ? "/router/homeSetting" : "/onboarding.1",
+      );
+    },
+    [router],
+  );
+
+  const handleLoginError = useCallback((error: unknown) => {
+    if (isUserCanceledSocialLogin(error)) {
+      return;
+    }
+
+    Alert.alert(
+      "로그인 실패",
+      error instanceof Error
+        ? error.message
+        : "소셜 로그인 중 문제가 발생했습니다.",
+    );
+  }, []);
+
+  const {
+    googleRequest,
+    kakaoRequest,
+    loginState,
+    signInWithApple,
+    signInWithGoogle,
+    signInWithKakao,
+  } = useSocialProviderLogin({
+    onLoginSuccess: handleLoginSuccess,
+    onLoginError: handleLoginError,
+  });
+
+  const isGoogleDisabled = loginState.isLoading || !googleRequest;
+  const isKakaoDisabled = loginState.isLoading || !kakaoRequest;
+  const isAppleDisabled = loginState.isLoading;
+  const isDevAuthEnabled = __DEV__ && isDevAuthTokenLoginEnabled();
+  const canShowGoogleLogin = Platform.OS === "web";
+
+  const handleDevAuthLogin = useCallback(() => {
+    loginWithDevAuthTokens()
+      .then(handleLoginSuccess)
+      .catch(handleLoginError);
+  }, [handleLoginError, handleLoginSuccess]);
+
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -20,9 +84,9 @@ export default function LoginScreen() {
         </Text>
       </View>
       <View className="mt-auto mb-20 w-[280px] gap-4 self-center">
-        {/* Google */}
-        <Pressable
-          className="
+        {canShowGoogleLogin && (
+          <Pressable
+            className="
               h-[45px]
               flex-row
               items-center
@@ -31,17 +95,23 @@ export default function LoginScreen() {
               bg-white
               active:bg-gray-100
             "
-          onPress={() => {}}
-        >
-          <Image
-            source={require("../../assets/images/Google.png")}
-            className="absolute left-5 h-[22px] w-[22px]"
-            resizeMode="contain"
-          />
-          <Text className="font-maru text-sm text-primary">
-            Google로 계속하기
-          </Text>
-        </Pressable>
+            disabled={isGoogleDisabled}
+            onPress={() => {
+              void signInWithGoogle();
+            }}
+          >
+            <Image
+              source={require("../../assets/images/Google.png")}
+              className="absolute left-5 h-[22px] w-[22px]"
+              resizeMode="contain"
+            />
+            <Text className="font-maru text-sm text-primary">
+              {loginState.provider === "GOOGLE"
+                ? "Google 로그인 중"
+                : "Google로 계속하기"}
+            </Text>
+          </Pressable>
+        )}
 
         {/* Kakao */}
         <Pressable
@@ -54,7 +124,10 @@ export default function LoginScreen() {
               bg-[#FEE500]
               active:bg-[#D8C300]
             "
-          onPress={() => {}}
+          disabled={isKakaoDisabled}
+          onPress={() => {
+            void signInWithKakao();
+          }}
         >
           <Image
             source={require("../../assets/images/Kakao.png")}
@@ -62,7 +135,9 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <Text className="font-maru text-sm text-primary">
-            카카오톡으로 계속하기
+            {loginState.provider === "KAKAO"
+              ? "카카오 로그인 중"
+              : "카카오톡으로 계속하기"}
           </Text>
         </Pressable>
 
@@ -77,7 +152,10 @@ export default function LoginScreen() {
               bg-white
               active:bg-gray-100
             "
-          onPress={() => {}}
+          disabled={isAppleDisabled}
+          onPress={() => {
+            void signInWithApple();
+          }}
         >
           <Image
             source={require("../../assets/images/Apple.png")}
@@ -85,9 +163,31 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <Text className="font-maru text-sm text-primary">
-            Apple로 계속하기
+            {loginState.provider === "APPLE"
+              ? "Apple 로그인 중"
+              : "Apple로 계속하기"}
           </Text>
         </Pressable>
+
+        {isDevAuthEnabled && (
+          <Pressable
+            className="
+              h-[45px]
+              flex-row
+              items-center
+              justify-center
+              rounded-full
+              bg-primary
+              active:bg-primary/80
+            "
+            disabled={loginState.isLoading}
+            onPress={handleDevAuthLogin}
+          >
+            <Text className="font-maru text-sm text-white">
+              개발용 JWT로 계속하기
+            </Text>
+          </Pressable>
+        )}
       </View>
     </ImageBackground>
   );

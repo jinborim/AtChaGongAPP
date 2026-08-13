@@ -1,5 +1,6 @@
 import CustomModal from "@/src/components/Modal/CustomModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
+import { logoutCurrentUser } from "@/src/features/auth/services";
 import { useRouter } from "expo-router";
 import { ChevronRight, Pencil } from "lucide-react-native";
 import { useState } from "react";
@@ -17,15 +18,28 @@ export default function Mypage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] =
     useState(false);
-  const handleLogout = () => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
     setIsLogoutModalOpen(false);
-    // 여기에 실제 로그아웃 함수
+
+    try {
+      await logoutCurrentUser();
+    } finally {
+      setIsLoggingOut(false);
+      router.replace("/login");
+    }
   };
   const handleDeleteAccount = () => {
     setIsDeleteAccountModalOpen(false);
     //여기에 실제 회원탈퇴 함수
   };
-  const router = useRouter();
 
   const handlePressPrivacyPolicy = () => {
     router.push("/mypage/privacy");
@@ -150,7 +164,7 @@ export default function Mypage() {
         title="로그아웃"
         description="로그아웃 하시겠습니까?"
         buttonCount={2}
-        confirmText="로그아웃"
+        confirmText={isLoggingOut ? "로그아웃 중" : "로그아웃"}
         cancelText="취소"
       />
       <CustomModal
