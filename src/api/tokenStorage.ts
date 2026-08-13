@@ -9,21 +9,21 @@ export type AuthTokens = {
 };
 
 /**
- * Reads the current access token from the device keychain-backed storage.
+ * 기기 보안 저장소에서 현재 access token을 조회합니다.
  */
 export async function getAccessToken() {
   return SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
 }
 
 /**
- * Reads the current refresh token used for access token reissue requests.
+ * access token 재발급에 사용할 refresh token을 조회합니다.
  */
 export async function getRefreshToken() {
   return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 }
 
 /**
- * Persists both auth tokens after login or token reissue.
+ * 로그인 또는 토큰 재발급 이후 받은 access/refresh token을 함께 저장합니다.
  */
 export async function saveAuthTokens(tokens: AuthTokens) {
   await Promise.all([
@@ -33,7 +33,7 @@ export async function saveAuthTokens(tokens: AuthTokens) {
 }
 
 /**
- * Clears locally stored auth tokens when the session is no longer valid.
+ * 로그아웃하거나 세션이 유효하지 않을 때 로컬에 저장된 인증 토큰을 삭제합니다.
  */
 export async function clearAuthTokens() {
   await Promise.all([

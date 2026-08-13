@@ -35,7 +35,8 @@ type ReissueResponse = {
 let reissuePromise: Promise<ReissueResponse> | null = null;
 
 /**
- * Returns the configured API origin and fails early when the environment is not set.
+ * 환경변수에 설정된 API origin을 반환합니다.
+ * 값이 없으면 요청 전에 설정 오류를 명확하게 던집니다.
  */
 function getApiBaseUrl() {
   if (!API_BASE_URL) {
@@ -48,7 +49,7 @@ function getApiBaseUrl() {
 }
 
 /**
- * Builds a versioned API URL and serializes primitive query parameters.
+ * 공통 API prefix를 붙인 전체 URL을 만들고 query 값을 문자열로 직렬화합니다.
  */
 function buildUrl(
   endpoint: string,
@@ -67,7 +68,8 @@ function buildUrl(
 }
 
 /**
- * Normalizes the backend envelope into data or throws a typed API error.
+ * 응답 본문을 JSON으로 파싱합니다.
+ * 서버가 JSON이 아닌 본문을 반환하면 공통 ApiError로 변환합니다.
  */
 function parseJson<T>(text: string, status: number): ApiResponse<T> | T {
   try {
@@ -81,6 +83,10 @@ function parseJson<T>(text: string, status: number): ApiResponse<T> | T {
   }
 }
 
+/**
+ * 백엔드 공통 응답 envelope를 data로 정규화합니다.
+ * 실패 응답이나 HTTP 오류는 ApiError로 변환해 호출부의 에러 처리를 통일합니다.
+ */
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
@@ -118,7 +124,9 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 /**
- * Executes an API request with optional bearer auth and one automatic token reissue retry.
+ * 서버 API를 호출하는 공통 요청 함수입니다.
+ * 기본적으로 access token을 Authorization 헤더에 붙이고,
+ * ACCESS_TOKEN_EXPIRED 오류가 오면 토큰을 재발급한 뒤 한 번만 재시도합니다.
  */
 async function request<T>(
   endpoint: string,
@@ -195,7 +203,8 @@ async function request<T>(
 }
 
 /**
- * Reissues expired access tokens and deduplicates simultaneous refresh attempts.
+ * refresh token으로 access token을 재발급합니다.
+ * 동시에 여러 요청이 만료 응답을 받아도 재발급 요청은 하나만 보내도록 공유 Promise를 사용합니다.
  */
 async function reissueTokens() {
   if (!reissuePromise) {
