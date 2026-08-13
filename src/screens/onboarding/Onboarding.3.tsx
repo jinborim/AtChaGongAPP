@@ -69,7 +69,7 @@ export default function Onboarding3() {
           <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/onboarding.4")} 
+              onPress={() => router.replace("/onboarding.4")} 
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >

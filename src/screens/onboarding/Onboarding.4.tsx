@@ -51,17 +51,17 @@ export default function Onboarding4() {
               꾸준함을 확인해 보세요
             </Text>
 
-            <View className="mt-10 flex-row gap-4">
-              <View className="h-32 w-44 items-center justify-center rounded-2xl border border-gray-100 bg-white">
-                <Text className="font-maru text-[24px] text-primary">7일</Text>
-                <Text className="mt-3 font-maru text-[16px] text-gray-300">
+            <View className="mt-10 flex-row self-stretch gap-4">
+              <View className="h-32 flex-1 items-center justify-center rounded-2xl border border-gray-100 bg-white">
+                <Text className="font-maru text-[20px] text-primary">7일</Text>
+                <Text className="mt-3 font-maru text-[12px] text-gray-300">
                   연속 스트릭
                 </Text>
               </View>
 
-              <View className="h-32 w-44 items-center justify-center rounded-2xl border border-gray-100 bg-white">
-                <Text className="font-maru text-[24px] text-primary">25h</Text>
-                <Text className="mt-3 font-maru text-[16px] text-gray-300">
+              <View className="h-32 flex-1 items-center justify-center rounded-2xl border border-gray-100 bg-white">
+                <Text className="font-maru text-[20px] text-primary">25h</Text>
+                <Text className="mt-3 font-maru text-[12px] text-gray-300">
                   총 집중 시간
                 </Text>
               </View>
@@ -82,7 +82,7 @@ export default function Onboarding4() {
           <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/router/homeSetting")} // 닉네임 정하는 페이지 만들면 수정
+              onPress={() => router.replace("/router/homeSetting")} // 닉네임 정하는 페이지 만들면 수정
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >

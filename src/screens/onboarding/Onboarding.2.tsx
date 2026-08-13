@@ -47,10 +47,10 @@ export default function Onboarding2() {
             />
 
             <Text className="mt-[18px] text-center font-maru text-[28px] leading-[36px] text-primary">
-              집중을 시작하면 {"\n"}얼음이 녹기 시작해요.
+              집중을 시작하면 {"\n"}얼음이 녹기 시작해요
             </Text>
             <Text className="mt-[18px] text-center font-maru text-[16px] leading-[24px] text-gray-300">
-              타이머가 흐르는 동안 얼음이 조금씩 녹아{"\n"}
+              타이머가 흐르는 동안 얼음이 조금씩 녹아,{"\n"}
               남은 집중 시간을 눈으로 확인할 수 있어요.
             </Text>
           </View>
@@ -68,7 +68,7 @@ export default function Onboarding2() {
           <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/onboarding.3")} 
+              onPress={() => router.replace("/onboarding.3")} 
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >
