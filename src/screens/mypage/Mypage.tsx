@@ -1,8 +1,16 @@
 import CustomModal from "@/src/components/Modal/CustomModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
+import { useRouter } from "expo-router";
 import { ChevronRight, Pencil } from "lucide-react-native";
 import { useState } from "react";
-import { Image, ImageBackground, Pressable, Text, View } from "react-native";
+import {
+  Image,
+  ImageBackground,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 const PRIMARY = "#183765";
 
 export default function Mypage() {
@@ -16,6 +24,11 @@ export default function Mypage() {
   const handleDeleteAccount = () => {
     setIsDeleteAccountModalOpen(false);
     //여기에 실제 회원탈퇴 함수
+  };
+  const router = useRouter();
+
+  const handlePressPrivacyPolicy = () => {
+    router.push("/mypage/privacy");
   };
   return (
     <ImageBackground
@@ -83,7 +96,10 @@ export default function Mypage() {
             </View>
 
             {/* 개인정보 처리 방침 */}
-            <View className="h-16 flex-row items-center border-b-2 border-primary px-5">
+            <TouchableOpacity
+              className="h-16 flex-row items-center border-b-2 border-primary px-5"
+              onPress={handlePressPrivacyPolicy}
+            >
               <Image
                 source={require("../../assets/images/Privacy.png")}
                 className="absolute left-5 h-[28px] w-[28px]"
@@ -95,7 +111,7 @@ export default function Mypage() {
               </Text>
 
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
-            </View>
+            </TouchableOpacity>
 
             {/* 로그아웃 */}
             <Pressable
