@@ -1,4 +1,4 @@
-import { ApiError, ApiResponse } from "./types";
+import { ApiError, ApiResponse } from "../types";
 
 /**
  * 응답 본문을 JSON으로 파싱합니다.

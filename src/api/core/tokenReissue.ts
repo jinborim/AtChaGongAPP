@@ -4,8 +4,8 @@ import {
   clearAuthTokens,
   getRefreshToken,
   saveAuthTokens,
-} from "./tokenStorage";
-import { ApiError } from "./types";
+} from "../tokenStorage";
+import { ApiError } from "../types";
 
 type ReissueResponse = {
   accessToken: string;

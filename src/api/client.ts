@@ -1,7 +1,7 @@
 import { getAccessToken } from "./tokenStorage";
-import { sendJsonRequest } from "./http";
-import { parseApiResponse } from "./response";
-import { reissueTokens } from "./tokenReissue";
+import { sendJsonRequest } from "./core/http";
+import { parseApiResponse } from "./core/response";
+import { reissueTokens } from "./core/tokenReissue";
 import { ApiError, ApiRequestOptions } from "./types";
 
 /**

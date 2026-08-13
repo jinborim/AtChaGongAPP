@@ -1,5 +1,5 @@
 import { buildApiUrl } from "./url";
-import { ApiError, ApiRequestOptions } from "./types";
+import { ApiError, ApiRequestOptions } from "../types";
 
 type SendJsonRequestOptions = Pick<
   ApiRequestOptions,

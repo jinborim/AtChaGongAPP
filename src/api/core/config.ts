@@ -1,4 +1,4 @@
-import { ApiConfigurationError } from "./types";
+import { ApiConfigurationError } from "../types";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 

@@ -1,5 +1,5 @@
 import { API_PREFIX, getApiBaseUrl } from "./config";
-import { ApiQuery } from "./types";
+import { ApiQuery } from "../types";
 
 /**
  * 공통 API prefix를 붙인 전체 URL을 만들고 query 값을 문자열로 직렬화합니다.
