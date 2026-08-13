@@ -1,4 +1,5 @@
 // 메인 홈 퍼블리싱 화면
+import CustomModal from "@/src/components/Modal/CustomModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -10,14 +11,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import { DEFAULT_FOCUS_MINUTES, MIN_CYCLE_COUNT } from "../../constants/timer";
 import {
   parseStoredCycleCount,
   parseStoredFocusMinutes,
 } from "../../utils/timerSettings";
-import Complete from "./Complete";
 
 export default function StudyScreen() {
   const router = useRouter();
@@ -188,13 +187,17 @@ export default function StudyScreen() {
           />
         </TouchableOpacity>
 
-        <Complete
+        <CustomModal
           visible={showCompleteModal}
           onClose={() => {
             closeCompleteModal().catch((error) =>
               console.log("완료 모달 닫기 오류:", error),
             );
           }}
+          title="수고하셨어요!"
+          description="설정한 사이클을 모두 완료했습니다."
+          buttonCount={1}
+          confirmText="확인"
         />
       </SafeAreaView>
       <NavigationBar />

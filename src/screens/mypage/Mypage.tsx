@@ -1,9 +1,38 @@
+import CustomModal from "@/src/components/Modal/CustomModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
+import { useRouter } from "expo-router";
 import { ChevronRight, Pencil } from "lucide-react-native";
-import { Image, ImageBackground, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  ImageBackground,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 const PRIMARY = "#183765";
 
 export default function Mypage() {
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] =
+    useState(false);
+  const handleLogout = () => {
+    setIsLogoutModalOpen(false);
+    // 여기에 실제 로그아웃 함수
+  };
+  const handleDeleteAccount = () => {
+    setIsDeleteAccountModalOpen(false);
+    //여기에 실제 회원탈퇴 함수
+  };
+  const router = useRouter();
+
+  const handlePressPrivacyPolicy = () => {
+    router.push("/mypage/privacy");
+  };
+  const handlePressNoticePage = () => {
+    router.push("/notice");
+  };
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -56,7 +85,10 @@ export default function Mypage() {
             </View>
 
             {/* 공지사항 */}
-            <View className="h-16 flex-row items-center border-b-2 border-primary px-5">
+            <TouchableOpacity
+              className="h-16 flex-row items-center border-b-2 border-primary px-5"
+              onPress={handlePressNoticePage}
+            >
               <Image
                 source={require("../../assets/images/Notice.png")}
                 className="absolute left-5 h-[28px] w-[28px]"
@@ -67,10 +99,13 @@ export default function Mypage() {
               </Text>
 
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
-            </View>
+            </TouchableOpacity>
 
             {/* 개인정보 처리 방침 */}
-            <View className="h-16 flex-row items-center border-b-2 border-primary px-5">
+            <TouchableOpacity
+              className="h-16 flex-row items-center border-b-2 border-primary px-5"
+              onPress={handlePressPrivacyPolicy}
+            >
               <Image
                 source={require("../../assets/images/Privacy.png")}
                 className="absolute left-5 h-[28px] w-[28px]"
@@ -82,28 +117,52 @@ export default function Mypage() {
               </Text>
 
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
-            </View>
+            </TouchableOpacity>
 
             {/* 로그아웃 */}
-            <View className="h-16 flex-row items-center px-5">
+            <Pressable
+              className="h-16 flex-row items-center px-5"
+              onPress={() => setIsLogoutModalOpen(true)} //클릭 시 모달 열기
+            >
               <Image
                 source={require("../../assets/images/Logout.png")}
                 className="absolute left-5 h-[28px] w-[28px]"
                 resizeMode="contain"
               />
-
               <Text className="ml-12 flex-1 font-maru text-md text-primary">
                 로그아웃
               </Text>
-
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
-            </View>
+            </Pressable>
           </View>
         </View>
-        <View className="mt-60 w-20 self-center border-b-2 border-gray-300 pb-2 flex-row items-center justify-center">
+        <Pressable
+          className="mt-60 w-20 self-center border-b-2 border-gray-300 pb-2 flex-row items-center justify-center"
+          onPress={() => setIsDeleteAccountModalOpen(true)}
+        >
           <Text className="font-maru text-gray-300">회원탈퇴</Text>
-        </View>
+        </Pressable>
       </View>
+      <CustomModal
+        visible={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        title="로그아웃"
+        description="로그아웃 하시겠습니까?"
+        buttonCount={2}
+        confirmText="로그아웃"
+        cancelText="취소"
+      />
+      <CustomModal
+        visible={isDeleteAccountModalOpen}
+        onClose={() => setIsDeleteAccountModalOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title="회원탈퇴"
+        description="정말...회원 탈퇴하시겠습니다? 정말요..?"
+        buttonCount={2}
+        confirmText="회원탈퇴"
+        cancelText="취소"
+      />
       <NavigationBar />
     </ImageBackground>
   );
