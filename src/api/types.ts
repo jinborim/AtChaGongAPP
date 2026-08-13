@@ -19,6 +19,19 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiFailureResponse;
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+export type ApiQuery = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
+
+export type ApiRequestOptions = {
+  method?: HttpMethod;
+  body?: unknown;
+  query?: ApiQuery;
+  auth?: boolean;
+  retryOnUnauthorized?: boolean;
+};
+
 export class ApiError extends Error {
   status: number;
   code: string;
