@@ -1,5 +1,6 @@
 import Header from "@/src/components/Header/Header";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
+import { useMonthStatistics } from "@/src/features/statistics/hooks/useStatistics";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ImageBackground, Pressable, Text, View } from "react-native";
@@ -7,24 +8,41 @@ import DayDetailModal from "./DayDetailModal";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default function MonthStatistics() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const {
+    year,
+    month,
+    monthData,
+    selectedDate,
+    selectedDayDetail,
+    isLoadingMonth,
+    isLoadingDay,
+    moveMonth,
+    selectDay,
+  } = useMonthStatistics();
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const dayIntensityMap = useMemo(() => {
+    const map = new Map<number, number>();
+    if (monthData?.days) {
+      monthData.days.forEach((item) => {
+        // "YYYY-MM-DD"에서 DD 추출
+        const dayNum = parseInt(item.date.split("-")[2], 10);
+        map.set(dayNum, item.intensityLevel);
+      });
+    }
+    return map;
+  }, [monthData]);
 
-  // 이번 달의 1일이 무슨 요일인지
-  // 일요일 = 0, 월요일 = 1 ... 토요일 = 6
   const firstDay = useMemo(() => {
-    return new Date(year, month, 1).getDay();
+    return new Date(year, month - 1, 1).getDay();
   }, [year, month]);
 
-  // 이번 달이 총 며칠인지
   const daysInMonth = useMemo(() => {
-    return new Date(year, month + 1, 0).getDate();
+    return new Date(year, month, 0).getDate(); // month월의 0일 = month월 1일의 전날 (즉, 해당 월 마지막날)
   }, [year, month]);
 
-  const moveMonth = (direction: number) => {
-    setCurrentDate(new Date(year, month + direction, 1));
+  const handleDayPress = (day: number) => {
+    setSelectedDay(day);
+    selectDay(day); // API 호출
   };
   return (
     <ImageBackground
@@ -44,7 +62,7 @@ export default function MonthStatistics() {
           </Pressable>
 
           <Text className="font-maru text-md text-primary">
-            {year}년 {month + 1}월
+            {year}년 {month}월
           </Text>
 
           <Pressable
@@ -77,20 +95,30 @@ export default function MonthStatistics() {
           {/* 실제 날짜 */}
           {Array.from({ length: daysInMonth }).map((_, index) => {
             const day = index + 1;
+            const intensity = dayIntensityMap.get(day) || 0; // 해당 날짜의 intensityLevel
 
             return (
               <Pressable
                 key={day}
-                onPress={() => setSelectedDay(day)}
+                onPress={() => handleDayPress(day)}
                 className="mb-5 w-[14.285%] items-center"
               >
                 <View className="relative h-10 w-10">
                   {/* 내부 배경 */}
-                  <View className="absolute bottom-1 left-1 right-1 top-1 bg-gray-100" />
+                  <View
+                    className={`absolute bottom-1 left-1 right-1 top-1 ${
+                      intensity > 0 ? "bg-secondary" : "bg-gray-100"
+                    }`}
+                  />
                   <View className="absolute left-1 right-1 top-0 h-1 bg-primary" />
                   <View className="absolute bottom-0 left-1 right-1 h-1 bg-primary" />
                   <View className="absolute bottom-1 left-0 top-1 w-1 bg-primary" />
                   <View className="absolute bottom-1 right-0 top-1 w-1 bg-primary" />
+                  <View className="flex-1 items-center justify-center">
+                    <Text className="font-maru text-xs text-primary">
+                      {day}
+                    </Text>
+                  </View>
                 </View>
               </Pressable>
             );
@@ -98,10 +126,12 @@ export default function MonthStatistics() {
         </View>
         <View className="items-end">
           <Text className="font-maru color-primary text-sm">
-            {month + 1}월 집중시간:
+            {month}월 집중시간:
+            {monthData ? monthData.totalFocusedTimeFormatted : "00:00:00"}
           </Text>
           <Text className="font-maru color-primary text-sm">
-            {month + 1}월 녹인 컵의 개수:
+            {month}월 녹인 컵의 개수:
+            {monthData ? `${monthData.completedCupCount}개` : "0개"}
           </Text>
         </View>
         <View className="relative mx-5 mt-5 h-[100px]">
@@ -124,13 +154,23 @@ export default function MonthStatistics() {
               이번달 최대 집중 날
             </Text>
 
-            <Text className="mt-1 font-maru text-xl text-primary">
-              {month + 1}월 9일
-            </Text>
+            {monthData?.bestDay ? (
+              <>
+                <Text className="mt-1 font-maru text-xl text-primary">
+                  {parseInt(monthData.bestDay.date.split("-")[1], 10)}월{" "}
+                  {parseInt(monthData.bestDay.date.split("-")[2], 10)}일
+                </Text>
 
-            <Text className="mt-2 font-maru text-sm text-primary">
-              총 시간: 1:50분 | 녹인 얼음: 8개
-            </Text>
+                <Text className="mt-2 font-maru text-sm text-primary">
+                  총 시간: {monthData.bestDayFormattedTime} | 녹인 얼음:{" "}
+                  {monthData.bestDay.completedCupCount}개
+                </Text>
+              </>
+            ) : (
+              <Text className="mt-2 font-maru text-sm text-gray-300">
+                집중 기록이 없습니다.
+              </Text>
+            )}
           </View>
 
           {/* 별 */}
@@ -142,10 +182,16 @@ export default function MonthStatistics() {
       <DayDetailModal
         visible={selectedDay !== null}
         onClose={() => setSelectedDay(null)}
-        month={month + 1}
+        month={month}
         day={selectedDay ?? 1}
-        focusTime="12:34"
-        meltedIceCount={3}
+        focusTime={
+          selectedDayDetail
+            ? selectedDayDetail.totalFocusedTimeFormatted
+            : "00:00:00"
+        }
+        meltedIceCount={
+          selectedDayDetail ? selectedDayDetail.completedCupCount : 0
+        }
       />
       <NavigationBar />
     </ImageBackground>

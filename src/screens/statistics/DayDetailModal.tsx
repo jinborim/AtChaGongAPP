@@ -35,12 +35,8 @@ export default function DayDetailModal({
           className="relative w-64 p-4"
           onPress={(e) => e.stopPropagation()}
         >
-          {/* 픽셀 스타일 파란색 외곽 */}
-          <View className="absolute -left-2 top-3 h-4 w-3 rounded-l bg-secondary" />
-          <View className="absolute -left-2 bottom-3 h-4 w-3 rounded-l bg-secondary" />
-
           {/* 팝업 흰색 배경 */}
-          <View className="absolute bottom-1 left-1 right-1 top-1 bg-secondary/70" />
+          <View className="absolute bottom-1 left-1 right-1 top-1 bg-back/90" />
 
           {/* 픽셀 테두리라인 */}
           <View className="absolute left-1 right-1 top-0 h-[2px] bg-primary" />
