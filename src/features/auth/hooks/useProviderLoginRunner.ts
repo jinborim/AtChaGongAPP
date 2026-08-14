@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import type { SocialProviderLoginState } from "../services";
 import type { RunProviderLogin, UseSocialProviderLoginOptions } from "./types";
@@ -17,13 +17,15 @@ export function useProviderLoginRunner({
     isLoading: false,
     provider: null,
   });
+  const isLoginInFlightRef = useRef(false);
 
   const runLogin: RunProviderLogin = useCallback(
     async (provider, operation) => {
-      if (loginState.isLoading) {
+      if (isLoginInFlightRef.current) {
         return;
       }
 
+      isLoginInFlightRef.current = true;
       setLoginState({ isLoading: true, provider });
 
       try {
@@ -32,10 +34,11 @@ export function useProviderLoginRunner({
       } catch (error) {
         onLoginError?.(error);
       } finally {
+        isLoginInFlightRef.current = false;
         setLoginState({ isLoading: false, provider: null });
       }
     },
-    [loginState.isLoading, onLoginError, onLoginSuccess],
+    [onLoginError, onLoginSuccess],
   );
 
   return {

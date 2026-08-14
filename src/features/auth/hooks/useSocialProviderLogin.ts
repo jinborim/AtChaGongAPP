@@ -15,13 +15,9 @@ WebBrowser.maybeCompleteAuthSession();
  * @returns provider별 로그인 실행 함수, AuthSession request, 현재 로그인 상태입니다.
  */
 export function useSocialProviderLogin(options: UseSocialProviderLoginOptions) {
-  const { loginState, runLogin, setLoginState } =
-    useProviderLoginRunner(options);
+  const { loginState, runLogin } = useProviderLoginRunner(options);
 
-  const google = useGoogleProviderLogin({
-    ...options,
-    setLoginState,
-  });
+  const google = useGoogleProviderLogin(runLogin);
   const kakao = useKakaoProviderLogin(runLogin);
   const signInWithApple = useAppleProviderLogin(runLogin);
 

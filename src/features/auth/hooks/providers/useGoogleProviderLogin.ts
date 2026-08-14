@@ -1,5 +1,6 @@
 import * as AuthSession from "expo-auth-session";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import * as Crypto from "expo-crypto";
+import { useCallback, useMemo } from "react";
 import { Platform } from "react-native";
 
 import { loginWithSocialCredential } from "../../services";
@@ -9,8 +10,7 @@ import {
   GOOGLE_CLIENT_IDS,
   SocialProviderError,
 } from "../../socialProvider";
-import type { UseSocialProviderLoginOptions } from "../types";
-import type { SocialProviderLoginState } from "../../services";
+import type { RunProviderLogin } from "../types";
 
 const MISSING_GOOGLE_CLIENT_ID = "missing-google-client-id";
 const GOOGLE_NATIVE_LOGIN_DISABLED_ERROR = new SocialProviderError(
@@ -30,35 +30,33 @@ function getGoogleIdToken(response: AuthSession.AuthSessionResult | null) {
   return response.params.id_token || response.authentication?.idToken || null;
 }
 
-type UseGoogleProviderLoginOptions = UseSocialProviderLoginOptions & {
-  /** Google AuthSession prompt 전후의 공통 로그인 상태를 갱신하는 setter입니다. */
-  setLoginState: React.Dispatch<React.SetStateAction<SocialProviderLoginState>>;
-};
+function createGoogleNonce() {
+  return Array.from(Crypto.getRandomBytes(16))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 /**
  * Google OAuth에서 ID token을 얻고 백엔드 소셜 로그인까지 연결합니다.
  *
  * 현재는 Android/iOS client ID가 준비되지 않아 Web 환경에서만 실행됩니다.
  *
- * @param options 로그인 성공/실패 콜백과 공통 로그인 상태 setter입니다.
+ * @param runLogin provider credential 획득과 백엔드 로그인을 공통 상태 처리 안에서 실행하는 함수입니다.
  * @returns Google AuthSession request와 로그인 시작 함수입니다.
  * @throws {SocialProviderError} Web이 아닌 플랫폼, client ID 누락, 사용자 취소, ID token 누락 시 발생합니다.
  */
-export function useGoogleProviderLogin({
-  onLoginError,
-  onLoginSuccess,
-  setLoginState,
-}: UseGoogleProviderLoginOptions) {
-  const [pendingLogin, setPendingLogin] = useState(false);
+export function useGoogleProviderLogin(runLogin: RunProviderLogin) {
   const redirectUri = useMemo(() => getAuthRedirectUri("google"), []);
+  const nonce = useMemo(() => createGoogleNonce(), []);
 
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+  const [request, , promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_IDS.web || MISSING_GOOGLE_CLIENT_ID,
       redirectUri,
       responseType: AuthSession.ResponseType.IdToken,
       scopes: ["openid", "profile", "email"],
       extraParams: {
+        nonce,
         prompt: "select_account",
       },
     },
@@ -66,7 +64,7 @@ export function useGoogleProviderLogin({
   );
 
   const signIn = useCallback(async () => {
-    try {
+    await runLogin("GOOGLE", async () => {
       if (Platform.OS !== "web") {
         throw GOOGLE_NATIVE_LOGIN_DISABLED_ERROR;
       }
@@ -84,13 +82,9 @@ export function useGoogleProviderLogin({
         );
       }
 
-      setPendingLogin(true);
-      setLoginState({ isLoading: true, provider: "GOOGLE" });
       const authResponse = await promptAsync();
 
       if (authResponse.type === "cancel" || authResponse.type === "dismiss") {
-        setPendingLogin(false);
-        setLoginState({ isLoading: false, provider: null });
         throw new SocialProviderError(
           "SOCIAL_LOGIN_CANCELED",
           "Google 로그인이 취소되었습니다.",
@@ -98,51 +92,24 @@ export function useGoogleProviderLogin({
       }
 
       if (authResponse.type === "error") {
-        setPendingLogin(false);
-        setLoginState({ isLoading: false, provider: null });
         throw new SocialProviderError(
           "GOOGLE_LOGIN_FAILED",
           authResponse.error?.message || "Google 로그인에 실패했습니다.",
         );
       }
-    } catch (error) {
-      setPendingLogin(false);
-      setLoginState({ isLoading: false, provider: null });
-      onLoginError?.(error);
-    }
-  }, [onLoginError, promptAsync, request, setLoginState]);
 
-  useEffect(() => {
-    if (!pendingLogin) {
-      return;
-    }
+      const idToken = getGoogleIdToken(authResponse);
 
-    const idToken = getGoogleIdToken(response);
-
-    if (!idToken) {
-      if (response?.type === "success") {
-        setPendingLogin(false);
-        setLoginState({ isLoading: false, provider: null });
-        onLoginError?.(
-          new SocialProviderError(
-            "GOOGLE_ID_TOKEN_MISSING",
-            "Google ID token을 받지 못했습니다.",
-          ),
+      if (!idToken) {
+        throw new SocialProviderError(
+          "GOOGLE_ID_TOKEN_MISSING",
+          "Google ID token을 받지 못했습니다.",
         );
       }
 
-      return;
-    }
-
-    setPendingLogin(false);
-
-    loginWithSocialCredential("GOOGLE", idToken)
-      .then(onLoginSuccess)
-      .catch(onLoginError)
-      .finally(() => {
-        setLoginState({ isLoading: false, provider: null });
-      });
-  }, [onLoginError, onLoginSuccess, pendingLogin, response, setLoginState]);
+      return loginWithSocialCredential("GOOGLE", idToken);
+    });
+  }, [promptAsync, request, runLogin]);
 
   return {
     request,

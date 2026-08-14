@@ -11,7 +11,7 @@ export type UseSocialProviderLoginOptions = {
 };
 
 /** 로그인 버튼/상태 표시에서 사용하는 provider 값입니다. */
-export type Provider = SocialProviderLoginState["provider"];
+export type Provider = NonNullable<SocialProviderLoginState["provider"]>;
 
 /**
  * provider별 credential 획득 로직을 공통 loading/error 처리 안에서 실행합니다.
