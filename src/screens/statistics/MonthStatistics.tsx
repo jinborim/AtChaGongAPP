@@ -3,11 +3,12 @@ import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ImageBackground, Pressable, Text, View } from "react-native";
+import DayDetailModal from "./DayDetailModal";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default function MonthStatistics() {
   const [currentDate, setCurrentDate] = useState(new Date());
-
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -78,7 +79,11 @@ export default function MonthStatistics() {
             const day = index + 1;
 
             return (
-              <View key={day} className="mb-5 w-[14.285%] items-center">
+              <Pressable
+                key={day}
+                onPress={() => setSelectedDay(day)}
+                className="mb-5 w-[14.285%] items-center"
+              >
                 <View className="relative h-10 w-10">
                   {/* 내부 배경 */}
                   <View className="absolute bottom-1 left-1 right-1 top-1 bg-gray-100" />
@@ -87,7 +92,7 @@ export default function MonthStatistics() {
                   <View className="absolute bottom-1 left-0 top-1 w-1 bg-primary" />
                   <View className="absolute bottom-1 right-0 top-1 w-1 bg-primary" />
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -134,6 +139,14 @@ export default function MonthStatistics() {
           </View>
         </View>
       </View>
+      <DayDetailModal
+        visible={selectedDay !== null}
+        onClose={() => setSelectedDay(null)}
+        month={month + 1}
+        day={selectedDay ?? 1}
+        focusTime="12:34"
+        meltedIceCount={3}
+      />
       <NavigationBar />
     </ImageBackground>
   );
