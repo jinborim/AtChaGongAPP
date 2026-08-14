@@ -86,14 +86,14 @@ export default function CoolingScreen() {
           </Text>
         </View>
 
-        <View className="mt-6 flex-row gap-2">
+        <View className="mt-6 w-[80%] flex-row gap-1">
           {Array.from({ length: cycleCount }).map((_, index) => (
             <View
               key={index}
               className={
                 index < currentCycle
-                  ? "h-1 w-12 rounded-[4px] bg-primary"
-                  : "h-1 w-12 rounded-[4px] bg-gray-300 opacity-[0.35]"
+                  ? "h-1 flex-1 rounded-[4px] bg-primary"
+                  : "h-1 flex-1 rounded-[4px] bg-gray-300 opacity-[0.35]"
               }
             />
           ))}
