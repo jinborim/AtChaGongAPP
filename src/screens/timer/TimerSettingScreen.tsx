@@ -1,5 +1,6 @@
 // 타이머 설정 퍼블리싱 화면
 import Header from "@/src/components/Header/Header";
+import TimerProgressBar from "@/src/components/TimerProgressBar";
 import { getTimerSettings, updateTimerSettings } from "@/src/features/timer";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -38,18 +39,6 @@ const SETTING_ICONS = {
   cycle: require("../../assets/images/Star.png"),
 } as const;
 
-const getCycleSegmentFlexes = (focusMinutes: number) => {
-  const focusRange = MAX_FOCUS_MINUTES - MIN_FOCUS_MINUTES;
-  const progress =
-    focusRange === 0 ? 0 : (focusMinutes - MIN_FOCUS_MINUTES) / focusRange;
-  const focusPercent = 66 + Math.min(1, Math.max(0, progress)) * 16;
-
-  return {
-    focus: focusPercent,
-    break: 100 - focusPercent,
-  };
-};
-
 type SettingCardProps = {
   label: string;
   value: number;
@@ -77,8 +66,6 @@ function SettingCard({
   decreaseDisabled = false,
   increaseDisabled = false,
 }: SettingCardProps) {
-  const cycleSegmentFlexes = getCycleSegmentFlexes(cycleFocusMinutes);
-
   return (
     <View
       className={`${
@@ -134,30 +121,11 @@ function SettingCard({
       </View>
 
       {cycleCount !== undefined && (
-        <View className="mt-3 flex-row items-center gap-1 px-0.5">
-          {Array.from({ length: MAX_CYCLE_COUNT }).map((_, index) => (
-            <View
-              key={index}
-              className="h-2 flex-1 flex-row overflow-hidden rounded-full bg-primary/10"
-            >
-              {index < cycleCount && (
-                <>
-                  <View
-                    style={{
-                      backgroundColor: "#87D7FE",
-                      flex: cycleSegmentFlexes.focus,
-                    }}
-                  />
-                  <View
-                    style={{
-                      backgroundColor: "#FFD298",
-                      flex: cycleSegmentFlexes.break,
-                    }}
-                  />
-                </>
-              )}
-            </View>
-          ))}
+        <View className="mt-3 px-0.5">
+          <TimerProgressBar
+            cycleCount={cycleCount}
+            focusMinutes={cycleFocusMinutes}
+          />
         </View>
       )}
     </View>
