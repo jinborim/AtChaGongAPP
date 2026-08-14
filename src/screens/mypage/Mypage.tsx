@@ -27,7 +27,6 @@ export default function Mypage() {
     }
 
     setIsLoggingOut(true);
-    setIsLogoutModalOpen(false);
 
     try {
       await logoutCurrentUser();
@@ -35,6 +34,7 @@ export default function Mypage() {
       // 서버 로그아웃이 실패해도 로컬 토큰은 삭제되므로 로그인 화면으로 이동합니다.
     } finally {
       setIsLoggingOut(false);
+      setIsLogoutModalOpen(false);
       router.replace("/login");
     }
   };

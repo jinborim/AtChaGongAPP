@@ -19,13 +19,6 @@ export type LoginResponse = {
   isOnboardingCompleted: boolean;
 };
 
-export type ReissueResponse = {
-  /** 재발급된 JWT access token입니다. */
-  accessToken: string;
-  /** 재발급된 refresh token입니다. 기존 저장 값을 교체해야 합니다. */
-  refreshToken: string;
-};
-
 export type LogoutResponse = {
   /** 서버가 반환하는 로그아웃 결과 메시지입니다. */
   message: string;

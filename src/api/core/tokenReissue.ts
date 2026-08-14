@@ -9,6 +9,21 @@ import { ApiError } from "../types";
 
 const reissuePromises = new Map<string, Promise<AuthTokens>>();
 
+function assertAuthTokens(value: AuthTokens) {
+  if (
+    typeof value.accessToken !== "string" ||
+    value.accessToken.length === 0 ||
+    typeof value.refreshToken !== "string" ||
+    value.refreshToken.length === 0
+  ) {
+    throw new ApiError({
+      status: 500,
+      code: "INVALID_REISSUE_RESPONSE",
+      message: "Token reissue response did not include valid auth tokens.",
+    });
+  }
+}
+
 /**
  * refresh token으로 access token을 재발급합니다.
  * 같은 세션에서 동시에 여러 요청이 만료 응답을 받으면 재발급 요청은 하나만 보냅니다.
@@ -38,6 +53,9 @@ export async function reissueTokens(refreshToken: string | null) {
       headers: { "Content-Type": "application/json" },
     });
     const tokens = await parseApiResponse<AuthTokens>(response);
+
+    assertAuthTokens(tokens);
+
     const didSaveTokens = await saveAuthTokensIfRefreshTokenMatches(
       tokens,
       refreshToken,
