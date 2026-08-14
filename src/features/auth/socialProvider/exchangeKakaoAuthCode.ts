@@ -1,7 +1,4 @@
-import {
-  IS_KAKAO_CLIENT_SECRET_DISABLED,
-  KAKAO_REST_API_KEY,
-} from "./providerConfig";
+import { KAKAO_REST_API_KEY } from "./providerConfig";
 import { SocialProviderError } from "./socialProviderError";
 
 const KAKAO_TOKEN_ENDPOINT = "https://kauth.kakao.com/oauth/token";
@@ -25,6 +22,7 @@ function parseKakaoTokenResponse(text: string) {
 
 /**
  * Kakao authorization code를 백엔드 검증에 사용할 Kakao access token으로 교환합니다.
+ * 클라이언트에서 교환하므로 Kakao 개발자 콘솔의 Client Secret은 OFF여야 합니다.
  *
  * @param params Kakao token endpoint에 전달할 authorization code 교환 정보입니다.
  * @param params.code Kakao OAuth redirect로 받은 authorization code입니다.
@@ -42,13 +40,6 @@ export async function exchangeKakaoAuthCode({
   codeVerifier?: string;
   redirectUri: string;
 }) {
-  if (!IS_KAKAO_CLIENT_SECRET_DISABLED) {
-    throw new SocialProviderError(
-      "KAKAO_CLIENT_SECRET_REQUIRES_SERVER_EXCHANGE",
-      "Kakao Client Secret이 켜져 있으면 클라이언트에서 토큰을 교환할 수 없습니다.",
-    );
-  }
-
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: KAKAO_REST_API_KEY,

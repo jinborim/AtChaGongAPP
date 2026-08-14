@@ -10,8 +10,6 @@ export const GOOGLE_CLIENT_IDS = {
 
 export const KAKAO_REST_API_KEY =
   process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY ?? "";
-export const IS_KAKAO_CLIENT_SECRET_DISABLED =
-  process.env.EXPO_PUBLIC_KAKAO_CLIENT_SECRET_DISABLED === "true";
 
 /**
  * provider OAuth 요청에 사용할 redirect URI를 반환합니다.
