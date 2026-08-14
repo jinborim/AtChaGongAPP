@@ -26,10 +26,21 @@ export default function Admin2() {
   const router = useRouter();
   const [notices, setNotices] = useState<AdminNotice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const reloadNotices = useCallback(async () => {
-    setNotices(await getAdminNotices());
+    setLoadError(null);
+
+    try {
+      setNotices(await getAdminNotices());
+    } catch (error) {
+      setLoadError(
+        error instanceof Error
+          ? error.message
+          : "공지사항을 불러오지 못했습니다."
+      );
+    }
   }, []);
 
   useFocusEffect(
@@ -37,9 +48,19 @@ export default function Admin2() {
       let isActive = true;
 
       setIsLoading(true);
+      setLoadError(null);
       getAdminNotices()
         .then((storedNotices) => {
           if (isActive) setNotices(storedNotices);
+        })
+        .catch((error: unknown) => {
+          if (!isActive) return;
+
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "공지사항을 불러오지 못했습니다."
+          );
         })
         .finally(() => {
           if (isActive) setIsLoading(false);
@@ -80,6 +101,28 @@ export default function Admin2() {
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator className="text-primary" />
+          </View>
+        ) : loadError ? (
+          <View className="flex-1 items-center justify-center px-8">
+            <Text className="text-center font-maru text-[16px] leading-6 text-primary">
+              공지사항을 불러오지 못했습니다
+            </Text>
+            <Text className="mt-3 text-center font-maru text-[12px] leading-5 text-gray-300">
+              {loadError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setIsLoading(true);
+                reloadNotices().finally(() => setIsLoading(false));
+              }}
+              className="mt-6 rounded-[8px] bg-primary px-5 py-3"
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              <Text className="font-maru text-[12px] text-white">
+                다시 시도
+              </Text>
+            </Pressable>
           </View>
         ) : (
           <ScrollView

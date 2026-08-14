@@ -32,7 +32,7 @@ export default function Admin1() {
           <View className="mt-10 h-[136px] flex-row items-center rounded-[8px] border border-gray-100 bg-white px-6">
             <View className="flex-1">
               <Text className="font-maru text-[14px] text-primary">
-                활성 유저 수
+                발행 유지 수
               </Text>
               <View className="mt-4 flex-row items-end">
                 <Text className="font-maru text-[28px] text-primary">
@@ -80,10 +80,10 @@ export default function Admin1() {
           <Pressable
             accessibilityRole="button"
             onPress={() => router.replace("/login")}
-            className="mb-8 mt-auto h-[52px] flex-row items-center justify-center rounded-[8px] border border-primary bg-white"
+            className="mb-8 mt-auto h-[52px] flex-row items-center justify-center rounded-[8px] border border-primary bg-primary"
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
-            <Text className="font-maru text-[12px] text-primary">로그아웃</Text>
+            <Text className="font-maru text-[12px] text-white">로그아웃</Text>
           </Pressable>
         </View>
 

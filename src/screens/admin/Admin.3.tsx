@@ -6,6 +6,7 @@ import { CalendarDays } from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
+  Alert,
   ImageBackground,
   KeyboardAvoidingView,
   Modal,
@@ -126,6 +127,11 @@ export default function Admin3() {
         await addAdminNotice(noticeValues);
       }
       router.replace("/admin.2" as never);
+    } catch {
+      Alert.alert(
+        "공지 저장에 실패했어요",
+        "공지를 저장하거나 목록 화면으로 이동하지 못했습니다. 다시 시도해 주세요."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -165,7 +171,7 @@ export default function Admin3() {
                 accessibilityState={{ disabled: isSubmitting }}
                 disabled={isSubmitting}
                 onPress={() => {
-                  submitNotice().catch(() => setIsSubmitting(false));
+                  void submitNotice();
                 }}
                 className="rounded-full bg-primary px-5 py-2"
                 style={({ pressed }) => ({

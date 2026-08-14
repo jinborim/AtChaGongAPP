@@ -3,7 +3,8 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-    Image,
+  Alert,
+  Image,
     ImageBackground,
     KeyboardAvoidingView,
     Platform,
@@ -33,6 +34,11 @@ export default function OnboardingNickname() {
     try {
       await AsyncStorage.setItem("nickname", trimmedNickname);
       router.replace("/router/homeSetting");
+    } catch {
+      Alert.alert(
+        "저장에 실패했어요",
+        "닉네임을 저장하거나 화면을 이동하지 못했습니다. 다시 시도해 주세요."
+      );
     } finally {
       setIsSaving(false);
     }
@@ -48,8 +54,8 @@ export default function OnboardingNickname() {
 
       <SafeAreaView className="flex-1">
         <KeyboardAvoidingView
-          className="flex-1 px-8 pb-[84px]"
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1 px-8"
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <View className="mt-[180px] flex-row items-center justify-center">
             <Image
@@ -71,30 +77,38 @@ export default function OnboardingNickname() {
           </View>
 
           <View className="mt-20">
-            <Text className="font-maru text-[12px] text-primary">닉네임</Text>
+            <Text
+              accessible={false}
+              className="font-maru text-[12px] text-primary"
+            >
+              닉네임
+            </Text>
             <TextInput
+              accessibilityLabel="닉네임"
               value={nickname}
               onChangeText={setNickname}
+              editable={!isSaving}
               placeholder="닉네임을 입력해주세요."
               placeholderTextColor={PLACEHOLDER_COLOR}
               maxLength={12}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="done"
+              onSubmitEditing={() => {
+                void startApp();
+              }}
               className="mt-3 h-12 rounded-[8px] border border-gray-100 bg-white px-4 font-maru text-[12px] text-primary"
             />
           </View>
 
-        </KeyboardAvoidingView>
-
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: !canStart }}
-          disabled={!canStart}
-          onPress={() => {
-            startApp().catch(() => setIsSaving(false));
-          }}
-          className={`absolute bottom-4 left-8 right-8 h-[52px] items-center justify-center rounded-[7px] bg-primary ${
+            disabled={!canStart}
+            onPress={() => {
+            void startApp();
+            }}
+          className={`mb-4 mt-auto h-[52px] w-full items-center justify-center rounded-[8px] bg-primary ${
             canStart ? "opacity-100" : "opacity-50"
           }`}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : undefined })}
@@ -103,6 +117,7 @@ export default function OnboardingNickname() {
             {isSaving ? "저장 중" : "시작하기"}
           </Text>
         </Pressable>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
   );

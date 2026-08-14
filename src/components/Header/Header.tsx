@@ -22,6 +22,8 @@ export default function Header({
     <View className="relative mt-20 h-10 w-full flex-row items-center justify-center">
       {showBack && (
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="뒤로 가기"
           onPress={onBack ?? (() => router.back())}
           className="absolute left-5 items-center justify-center"
         >
