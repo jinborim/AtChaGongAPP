@@ -13,10 +13,10 @@ const DEV_AUTH_ONBOARDING_COMPLETED =
 /**
  * 개발용 JWT 직접 로그인에 필요한 access/refresh token이 설정되어 있는지 확인합니다.
  *
- * @returns 개발 환경변수에 access token과 refresh token이 모두 있으면 true입니다.
+ * @returns 개발 빌드이고, 개발 환경변수에 access token과 refresh token이 모두 있으면 true입니다.
  */
 export function isDevAuthTokenLoginEnabled() {
-  return Boolean(DEV_AUTH_ACCESS_TOKEN && DEV_AUTH_REFRESH_TOKEN);
+  return __DEV__ && Boolean(DEV_AUTH_ACCESS_TOKEN && DEV_AUTH_REFRESH_TOKEN);
 }
 
 /**
@@ -72,6 +72,10 @@ export async function loginWithSocialCredential(
  * @throws {Error} 개발용 access/refresh token 환경변수가 비어 있으면 발생합니다.
  */
 export async function loginWithDevAuthTokens(): Promise<SocialLoginResult> {
+  if (!__DEV__) {
+    throw new Error("개발용 JWT 로그인은 개발 빌드에서만 사용할 수 있습니다.");
+  }
+
   if (!isDevAuthTokenLoginEnabled()) {
     throw new Error("개발용 JWT 토큰 환경변수가 설정되지 않았습니다.");
   }
