@@ -1,3 +1,5 @@
+import { ApiError, clearAuthTokens } from "@/src/api";
+import { completeOnboarding, updateNickname } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -5,13 +7,13 @@ import React, { useState } from "react";
 import {
   Alert,
   Image,
-    ImageBackground,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    Text,
-    TextInput,
-    View,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +21,33 @@ const BACKGROUND = require("../../assets/images/Background.png");
 const PENGUIN = require("../../assets/images/Penguin1.png");
 const SPEECH_BUBBLE = require("../../assets/images/SpeechBubble.png");
 const PLACEHOLDER_COLOR = "#A2AAB0";
+
+function getNicknameErrorMessage(error: unknown) {
+  if (!(error instanceof ApiError)) {
+    return "닉네임을 저장하거나 화면을 이동하지 못했습니다. 다시 시도해 주세요.";
+  }
+
+  switch (error.code) {
+    case "INVALID_NICKNAME":
+      return "닉네임은 공백을 제외하고 1~20자로 입력해 주세요.";
+    case "SUSPENDED_USER":
+      return "정지된 계정입니다. 고객센터에 문의해 주세요.";
+    case "WITHDRAWN_USER":
+      return "탈퇴 처리된 계정입니다.";
+    case "NETWORK_ERROR":
+      return "네트워크 연결을 확인한 뒤 다시 시도해 주세요.";
+    default:
+      if (error.status === 401) {
+        return "로그인이 만료되었습니다. 다시 로그인해 주세요.";
+      }
+
+      if (error.status === 404) {
+        return "사용자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.";
+      }
+
+      return error.message || "닉네임 저장에 실패했습니다. 다시 시도해 주세요.";
+  }
+}
 
 export default function OnboardingNickname() {
   const [nickname, setNickname] = useState("");
@@ -32,13 +61,29 @@ export default function OnboardingNickname() {
     setIsSaving(true);
 
     try {
-      await AsyncStorage.setItem("nickname", trimmedNickname);
+      const response = await updateNickname({ nickname: trimmedNickname });
+      await completeOnboarding();
+      await AsyncStorage.setItem("nickname", response.nickname);
       router.replace("/router/homeSetting");
-    } catch {
-      Alert.alert(
-        "저장에 실패했어요",
-        "닉네임을 저장하거나 화면을 이동하지 못했습니다. 다시 시도해 주세요."
-      );
+    } catch (error) {
+      const shouldReturnToLogin =
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 404);
+
+      if (shouldReturnToLogin) {
+        await clearAuthTokens();
+      }
+
+      Alert.alert("저장에 실패했어요", getNicknameErrorMessage(error), [
+        {
+          text: "확인",
+          onPress: () => {
+            if (shouldReturnToLogin) {
+              router.replace("/login");
+            }
+          },
+        },
+      ]);
     } finally {
       setIsSaving(false);
     }
@@ -90,7 +135,7 @@ export default function OnboardingNickname() {
               editable={!isSaving}
               placeholder="닉네임을 입력해주세요."
               placeholderTextColor={PLACEHOLDER_COLOR}
-              maxLength={12}
+              maxLength={20}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="done"
@@ -101,21 +146,21 @@ export default function OnboardingNickname() {
             />
           </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canStart }}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canStart }}
             disabled={!canStart}
             onPress={() => {
-            void startApp();
+              void startApp();
             }}
-          className={`mb-4 mt-auto h-[52px] w-full items-center justify-center rounded-[8px] bg-primary active:opacity-70 ${
-            canStart ? "opacity-100" : "opacity-50"
-          }`}
-        >
-          <Text className="font-maru text-[12px] text-white">
-            {isSaving ? "저장 중" : "시작하기"}
-          </Text>
-        </Pressable>
+            className={`mb-4 mt-auto h-[52px] w-full items-center justify-center rounded-[8px] bg-primary active:opacity-70 ${
+              canStart ? "opacity-100" : "opacity-50"
+            }`}
+          >
+            <Text className="font-maru text-[12px] text-white">
+              {isSaving ? "저장 중" : "시작하기"}
+            </Text>
+          </Pressable>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
