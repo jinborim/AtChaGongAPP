@@ -138,11 +138,10 @@ export default function Onboarding4() {
             </View>
           </View>
 
-         
-            <View
+          <View
             className="absolute bottom-[160px] flex-row items-center gap-8"
             accessibilityLabel="온보딩 4/4"
-            >
+          >
             <View className="h-5 w-5 rounded-full bg-gray-300" />
             <View className="h-5 w-5 rounded-full bg-gray-300" />
             <View className="h-5 w-5 rounded-full bg-gray-300" />
