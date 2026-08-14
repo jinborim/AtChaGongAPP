@@ -86,10 +86,6 @@ export async function updateAdminNotice(
   });
 }
 
-export async function endAdminNotice(id: string) {
-  await updateAdminNotice(id, { endedAt: new Date().toISOString() });
-}
-
 export async function deleteAdminNotice(id: string) {
   return enqueueNoticeMutation(async () => {
     const notices = await getAdminNotices();
