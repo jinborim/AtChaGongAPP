@@ -15,6 +15,13 @@ export type ApiFailureResponse = {
   };
 };
 
+export type ApiErrorResponse = {
+  status: number;
+  code: string;
+  message: string;
+  timestamp?: string;
+};
+
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiFailureResponse;
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -42,7 +49,7 @@ export class ApiError extends Error {
     code,
     message,
     timestamp,
-  }: ApiFailureResponse["error"]) {
+  }: ApiErrorResponse) {
     super(message);
     this.name = "ApiError";
     this.status = status;

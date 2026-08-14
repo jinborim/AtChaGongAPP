@@ -1,4 +1,4 @@
-import { ApiError, ApiResponse } from "../types";
+import { ApiError, ApiErrorResponse, ApiResponse } from "../types";
 
 /**
  * 응답 본문을 JSON으로 파싱합니다.
@@ -14,6 +14,19 @@ function parseJson<T>(text: string, status: number): ApiResponse<T> | T {
       message: "API response was not valid JSON.",
     });
   }
+}
+
+function isApiErrorResponse(payload: unknown): payload is ApiErrorResponse {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "status" in payload &&
+    "code" in payload &&
+    "message" in payload &&
+    typeof payload.status === "number" &&
+    typeof payload.code === "string" &&
+    typeof payload.message === "string"
+  );
 }
 
 /**
@@ -36,6 +49,10 @@ export async function parseApiResponse<T>(response: Response): Promise<T> {
       payload.success === false
     ) {
       throw new ApiError(payload.error);
+    }
+
+    if (isApiErrorResponse(payload)) {
+      throw new ApiError(payload);
     }
 
     throw new ApiError({
