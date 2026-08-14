@@ -3,6 +3,7 @@ import {
   isDevAuthTokenLoginEnabled,
   loginWithDevAuthTokens,
 } from "@/src/features/auth/services";
+import type { SocialLoginResult } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
@@ -20,7 +21,7 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const handleLoginSuccess = useCallback(
-    ({ isOnboardingCompleted }: { isOnboardingCompleted: boolean }) => {
+    ({ isOnboardingCompleted }: SocialLoginResult) => {
       router.replace(
         isOnboardingCompleted ? "/router/homeSetting" : "/onboarding.1",
       );
@@ -58,6 +59,7 @@ export default function LoginScreen() {
   const isAppleDisabled = loginState.isLoading;
   const isDevAuthEnabled = __DEV__ && isDevAuthTokenLoginEnabled();
   const canShowGoogleLogin = Platform.OS === "web";
+  const canShowAppleLogin = Platform.OS === "ios";
 
   const handleDevAuthLogin = useCallback(() => {
     loginWithDevAuthTokens()
@@ -141,9 +143,9 @@ export default function LoginScreen() {
           </Text>
         </Pressable>
 
-        {/* Apple */}
-        <Pressable
-          className="
+        {canShowAppleLogin && (
+          <Pressable
+            className="
                 h-[45px]
               flex-row
               items-center
@@ -152,22 +154,23 @@ export default function LoginScreen() {
               bg-white
               active:bg-gray-100
             "
-          disabled={isAppleDisabled}
-          onPress={() => {
-            void signInWithApple();
-          }}
-        >
-          <Image
-            source={require("../../assets/images/Apple.png")}
-            className="absolute left-5 h-[22px] w-[22px]"
-            resizeMode="contain"
-          />
-          <Text className="font-maru text-sm text-primary">
-            {loginState.provider === "APPLE"
-              ? "Apple 로그인 중"
-              : "Apple로 계속하기"}
-          </Text>
-        </Pressable>
+            disabled={isAppleDisabled}
+            onPress={() => {
+              void signInWithApple();
+            }}
+          >
+            <Image
+              source={require("../../assets/images/Apple.png")}
+              className="absolute left-5 h-[22px] w-[22px]"
+              resizeMode="contain"
+            />
+            <Text className="font-maru text-sm text-primary">
+              {loginState.provider === "APPLE"
+                ? "Apple 로그인 중"
+                : "Apple로 계속하기"}
+            </Text>
+          </Pressable>
+        )}
 
         {isDevAuthEnabled && (
           <Pressable
