@@ -1,3 +1,4 @@
+import TimerProgressBar from "@/src/components/TimerProgressBar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -5,34 +6,40 @@ import { Image, ImageBackground, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
-import { BREAK_MINUTES, MIN_CYCLE_COUNT } from "../../constants/timer";
-import { parseStoredCycleCount } from "../../utils/timerSettings";
+import {
+  DEFAULT_CYCLE_COUNT,
+  DEFAULT_FOCUS_MINUTES,
+  getBreakDurationMilliseconds,
+  MIN_CYCLE_COUNT,
+} from "../../constants/timer";
+import {
+  parseStoredCycleCount,
+  parseStoredFocusMinutes,
+} from "../../utils/timerSettings";
 
-const BREAK_DURATION = BREAK_MINUTES * 60 * 1000;
+const BREAK_DURATION = getBreakDurationMilliseconds();
 
 export default function CoolingScreen() {
   const router = useRouter();
-  const [cycleCount, setCycleCount] = useState(MIN_CYCLE_COUNT);
+  const [cycleCount, setCycleCount] = useState(DEFAULT_CYCLE_COUNT);
   const [currentCycle, setCurrentCycle] = useState(MIN_CYCLE_COUNT);
+  const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
   const [remainingMilliseconds, setRemainingMilliseconds] =
     useState(BREAK_DURATION);
   const [endTime, setEndTime] = useState<number | null>(null);
 
   useEffect(() => {
     const startRest = async () => {
-      const [savedCycleCount, savedCurrentCycle] = await Promise.all([
+      const [savedCycleCount, savedFocusMinutes] = await Promise.all([
         AsyncStorage.getItem("cycleCount"),
-        AsyncStorage.getItem("currentCycle"),
+        AsyncStorage.getItem("focusMinutes"),
       ]);
 
       const cycles = parseStoredCycleCount(savedCycleCount);
-      const activeCycle = Math.min(
-        cycles,
-        parseStoredCycleCount(savedCurrentCycle),
-      );
 
       setCycleCount(cycles);
-      setCurrentCycle(activeCycle);
+      setCurrentCycle(MIN_CYCLE_COUNT);
+      setFocusMinutes(parseStoredFocusMinutes(savedFocusMinutes));
       setRemainingMilliseconds(BREAK_DURATION);
       setEndTime(Date.now() + BREAK_DURATION);
     };
@@ -53,18 +60,12 @@ export default function CoolingScreen() {
         clearInterval(timer);
         setEndTime(null);
 
-        const nextCycle = Math.min(cycleCount, currentCycle + 1);
-        Promise.all([
-          AsyncStorage.setItem("currentCycle", String(nextCycle)),
-          AsyncStorage.setItem("autoStartFocus", "true"),
-        ])
-          .then(() => router.replace("/router/homeSetting"))
-          .catch((error) => console.log("다음 사이클 시작 오류:", error));
+        router.replace("/router/homeSetting");
       }
     }, 50);
 
     return () => clearInterval(timer);
-  }, [currentCycle, cycleCount, endTime, router]);
+  }, [endTime, router]);
 
   const minutes = Math.floor(remainingMilliseconds / 60000);
   const seconds = Math.floor((remainingMilliseconds % 60000) / 1000);
@@ -72,6 +73,8 @@ export default function CoolingScreen() {
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(
     seconds,
   ).padStart(2, "0")}:${String(centiseconds).padStart(2, "0")}`;
+  const breakProgress =
+    BREAK_DURATION === 0 ? 0 : 1 - remainingMilliseconds / BREAK_DURATION;
 
   return (
     <ImageBackground
@@ -86,17 +89,15 @@ export default function CoolingScreen() {
           </Text>
         </View>
 
-        <View className="mt-6 w-[80%] flex-row gap-1">
-          {Array.from({ length: cycleCount }).map((_, index) => (
-            <View
-              key={index}
-              className={
-                index < currentCycle
-                  ? "h-1 flex-1 rounded-[4px] bg-primary"
-                  : "h-1 flex-1 rounded-[4px] bg-gray-300 opacity-[0.35]"
-              }
-            />
-          ))}
+        <View className="mt-6 w-[80%]">
+          <TimerProgressBar
+            cycleCount={cycleCount}
+            focusMinutes={focusMinutes}
+            activeCycle={currentCycle}
+            activeProgress={breakProgress}
+            phase="break"
+            heightClassName="h-1"
+          />
         </View>
 
         <View className="mt-11">
