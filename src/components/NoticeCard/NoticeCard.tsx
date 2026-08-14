@@ -3,13 +3,13 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
-interface NoticeCardProps {
+export interface NoticeCardProps {
   isNew?: boolean;
   title: string;
-  description: string;
+  description?: string; // 선택적(Optional)으로 변경
   date: string;
-  href?: string; // 이동할 상세 페이지 경로
-  onPress?: () => void; // 필요시 별도 클릭 이벤트를 사용할 때
+  href?: string;
+  onPress?: () => void;
 }
 
 export default function NoticeCard({
