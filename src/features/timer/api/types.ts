@@ -18,3 +18,11 @@ export type UpdateTimerSettingsRequest = {
   breakMinutes: number;
   cycleCount: number;
 };
+
+export type CompleteFocusRecordRequest = {
+  beverageId: number;
+  focusMinutes: number;
+  focusedSeconds: number;
+  startedAt: string;
+  completedAt: string;
+};

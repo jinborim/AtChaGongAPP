@@ -2,6 +2,7 @@ import { apiClient } from "@/src/api/client";
 
 import type {
   Beverage,
+  CompleteFocusRecordRequest,
   TimerSettings,
   UpdateTimerSettingsRequest,
 } from "./types";
@@ -19,4 +20,11 @@ export function updateTimerSettings(request: UpdateTimerSettingsRequest) {
 
 export function getBeverages() {
   return apiClient.request<Beverage[]>("/beverages");
+}
+
+export function completeFocusRecord(request: CompleteFocusRecordRequest) {
+  return apiClient.request<unknown>("/timer/focus-records", {
+    method: "POST",
+    body: request,
+  });
 }
