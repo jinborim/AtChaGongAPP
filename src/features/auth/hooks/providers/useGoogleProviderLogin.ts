@@ -24,6 +24,55 @@ function getGoogleIdToken(response: AuthSession.AuthSessionResult | null) {
   return response.params.id_token || response.authentication?.idToken || null;
 }
 
+function decodeBase64UrlJson<T>(value: string) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const paddedBase64 = base64.padEnd(
+    base64.length + ((4 - (base64.length % 4)) % 4),
+    "=",
+  );
+  const binary = atob(paddedBase64);
+  const encoded = Array.from(binary)
+    .map((character) =>
+      `%${character.charCodeAt(0).toString(16).padStart(2, "0")}`,
+    )
+    .join("");
+
+  return JSON.parse(decodeURIComponent(encoded)) as T;
+}
+
+function getIdTokenNonce(idToken: string) {
+  const [, payload] = idToken.split(".");
+
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    const claims = decodeBase64UrlJson<{ nonce?: unknown }>(payload);
+    return typeof claims.nonce === "string" ? claims.nonce : null;
+  } catch {
+    return null;
+  }
+}
+
+function assertGoogleNonce(idToken: string, expectedNonce: string) {
+  const tokenNonce = getIdTokenNonce(idToken);
+
+  if (!tokenNonce) {
+    throw new SocialProviderError(
+      "GOOGLE_ID_TOKEN_NONCE_MISSING",
+      "Google ID token의 nonce를 확인하지 못했습니다.",
+    );
+  }
+
+  if (tokenNonce !== expectedNonce) {
+    throw new SocialProviderError(
+      "GOOGLE_ID_TOKEN_NONCE_MISMATCH",
+      "Google ID token의 nonce가 로그인 요청과 일치하지 않습니다.",
+    );
+  }
+}
+
 function createGoogleNonce() {
   return Array.from(Crypto.getRandomBytes(16))
     .map((byte) => byte.toString(16).padStart(2, "0"))
@@ -110,9 +159,11 @@ export function useGoogleProviderLogin(runLogin: RunProviderLogin) {
         );
       }
 
+      assertGoogleNonce(idToken, nonce);
+
       return loginWithSocialCredential("GOOGLE", idToken);
     });
-  }, [googleClientId, promptAsync, request, runLogin]);
+  }, [googleClientId, nonce, promptAsync, request, runLogin]);
 
   return {
     request,
