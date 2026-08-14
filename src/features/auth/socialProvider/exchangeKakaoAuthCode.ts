@@ -51,14 +51,25 @@ export async function exchangeKakaoAuthCode({
     body.set("code_verifier", codeVerifier);
   }
 
-  const response = await fetch(KAKAO_TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
-    },
-    body: body.toString(),
-  });
-  const responseText = await response.text();
+  let response: Response;
+  let responseText: string;
+
+  try {
+    response = await fetch(KAKAO_TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+      },
+      body: body.toString(),
+    });
+    responseText = await response.text();
+  } catch {
+    throw new SocialProviderError(
+      "KAKAO_TOKEN_EXCHANGE_FAILED",
+      "Kakao token endpoint 요청에 실패했습니다.",
+    );
+  }
+
   const payload = responseText ? parseKakaoTokenResponse(responseText) : {};
 
   if (!response.ok || !payload.access_token) {

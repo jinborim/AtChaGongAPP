@@ -4,22 +4,17 @@ export type ApiSuccessResponse<T> = {
   message: string | null;
 };
 
-export type ApiFailureResponse = {
-  success: false;
-  data: null;
-  error: {
-    status: number;
-    code: string;
-    message: string;
-    timestamp?: string;
-  };
-};
-
 export type ApiErrorResponse = {
   status: number;
   code: string;
   message: string;
   timestamp?: string;
+};
+
+export type ApiFailureResponse = {
+  success: false;
+  data: null;
+  error: ApiErrorResponse;
 };
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiFailureResponse;

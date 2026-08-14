@@ -1,9 +1,8 @@
 import { useSocialProviderLogin } from "@/src/features/auth/hooks";
-import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import type { SocialLoginResult } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
 import { useRouter } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   Image,
@@ -16,9 +15,13 @@ import {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const [webLoginErrorMessage, setWebLoginErrorMessage] = useState<
+    string | null
+  >(null);
 
   const handleLoginSuccess = useCallback(
     ({ isOnboardingCompleted }: SocialLoginResult) => {
+      setWebLoginErrorMessage(null);
       router.replace(
         isOnboardingCompleted ? "/router/homeSetting" : "/onboarding.1",
       );
@@ -31,12 +34,17 @@ export default function LoginScreen() {
       return;
     }
 
-    Alert.alert(
-      "로그인 실패",
+    const message =
       error instanceof Error
         ? error.message
-        : "소셜 로그인 중 문제가 발생했습니다.",
-    );
+        : "소셜 로그인 중 문제가 발생했습니다.";
+
+    if (Platform.OS === "web") {
+      setWebLoginErrorMessage(message);
+      return;
+    }
+
+    Alert.alert("로그인 실패", message);
   }, []);
 
   const {
@@ -45,7 +53,6 @@ export default function LoginScreen() {
     kakaoRequest,
     loginState,
     signInWithApple,
-    signInWithDevAuthTokens,
     signInWithGoogle,
     signInWithKakao,
   } = useSocialProviderLogin({
@@ -56,7 +63,6 @@ export default function LoginScreen() {
   const isGoogleDisabled = loginState.isLoading || !googleRequest;
   const isKakaoDisabled = loginState.isLoading || !kakaoRequest;
   const isAppleDisabled = loginState.isLoading;
-  const isDevAuthEnabled = __DEV__ && isDevAuthTokenLoginEnabled();
   const canShowAppleLogin = Platform.OS === "ios";
 
   return (
@@ -164,28 +170,10 @@ export default function LoginScreen() {
           </Pressable>
         )}
 
-        {isDevAuthEnabled && (
-          <Pressable
-            className="
-              h-[45px]
-              flex-row
-              items-center
-              justify-center
-              rounded-full
-              bg-primary
-              active:bg-primary/80
-            "
-            disabled={loginState.isLoading}
-            onPress={() => {
-              void signInWithDevAuthTokens();
-            }}
-          >
-            <Text className="font-maru text-sm text-white">
-              {loginState.provider === "DEV"
-                ? "개발용 JWT 로그인 중"
-                : "개발용 JWT로 계속하기"}
-            </Text>
-          </Pressable>
+        {Platform.OS === "web" && webLoginErrorMessage && (
+          <Text className="text-center font-maru text-xs text-red-500">
+            {webLoginErrorMessage}
+          </Text>
         )}
       </View>
     </ImageBackground>

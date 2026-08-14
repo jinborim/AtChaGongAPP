@@ -1,7 +1,6 @@
 import * as AuthSession from "expo-auth-session";
 
 const AUTH_REDIRECT_PATH = "auth";
-const APP_SCHEME = "atchagongapp";
 
 export const GOOGLE_CLIENT_IDS = {
   android: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? "",
@@ -31,7 +30,6 @@ export function getAuthRedirectUri(provider: "google" | "kakao") {
   }
 
   return AuthSession.makeRedirectUri({
-    scheme: APP_SCHEME,
     path: `${AUTH_REDIRECT_PATH}/${provider}`,
   });
 }
