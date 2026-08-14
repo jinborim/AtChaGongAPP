@@ -1,5 +1,7 @@
 export {
   createSocialLoginRequest,
+  isDevAuthTokenLoginEnabled,
+  loginWithDevAuthTokens,
   loginWithSocialCredential,
   logoutCurrentUser,
 } from "./authService";
