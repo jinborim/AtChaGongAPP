@@ -339,6 +339,30 @@ export default function StudyScreen() {
 
         <TimerSessionContent phase={timerPhase} />
 
+        <View className="mt-1 min-h-[52px] w-[80%] flex-row items-center justify-center gap-4">
+          {beverage !== null && (
+            <View className="flex-row items-center">
+              <Image
+                source={{ uri: beverage.imgUrl }}
+                className="mr-2 h-9 w-9"
+                resizeMode="contain"
+              />
+              <Text
+                className="max-w-[120px] font-maru text-xs text-primary"
+                numberOfLines={1}
+              >
+                {beverage.name}
+              </Text>
+            </View>
+          )}
+
+          {todaySummary !== null && (
+            <Text className="font-maru text-xs text-primary">
+              오늘 {focusedMinutes}분 · {todaySummary.completedCupCount}잔
+            </Text>
+          )}
+        </View>
+
         <TouchableOpacity
           className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
             isRunning
