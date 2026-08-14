@@ -1,4 +1,8 @@
-import { clearAuthTokens, getAccessToken } from "./tokenStorage";
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+} from "./tokenStorage";
 import { sendJsonRequest } from "./core/http";
 import { parseApiResponse } from "./core/response";
 import { reissueTokens } from "./core/tokenReissue";
@@ -47,11 +51,27 @@ async function request<T>(
       error.code === "ACCESS_TOKEN_EXPIRED"
     ) {
       let tokens;
+      const refreshTokenBeforeReissue = await getRefreshToken();
 
       try {
         tokens = await reissueTokens();
       } catch (reissueError) {
-        await clearAuthTokens();
+        if (
+          reissueError instanceof ApiError &&
+          reissueError.code === "AUTH_SESSION_CHANGED"
+        ) {
+          throw reissueError;
+        }
+
+        const currentRefreshToken = await getRefreshToken();
+
+        if (
+          refreshTokenBeforeReissue &&
+          currentRefreshToken === refreshTokenBeforeReissue
+        ) {
+          await clearAuthTokens();
+        }
+
         throw reissueError;
       }
 
