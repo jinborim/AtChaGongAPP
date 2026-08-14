@@ -1,7 +1,8 @@
 import { useSocialProviderLogin } from "@/src/features/auth/hooks";
-import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import type { SocialLoginResult } from "@/src/features/auth/services";
+import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
+import { getMe } from "@/src/features/user";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -20,15 +21,25 @@ export default function LoginScreen() {
     string | null
   >(null);
 
-  const handleLoginSuccess = useCallback(
-    ({ isOnboardingCompleted }: SocialLoginResult) => {
-      setWebLoginErrorMessage(null);
-      router.replace(
-        isOnboardingCompleted ? "/router/homeSetting" : "/onboarding.1",
-      );
-    },
-    [router],
-  );
+ const handleLoginSuccess = useCallback(
+  async ({ isOnboardingCompleted }: SocialLoginResult) => {
+    setWebLoginErrorMessage(null);
+
+    const me = await getMe();
+
+    if (me.userRole === "ADMIN") {
+      router.replace("/admin.1");
+      return;
+    }
+
+    router.replace(
+      isOnboardingCompleted
+        ? "/router/homeSetting"
+        : "/onboarding.1",
+    );
+  },
+  [router],
+);
 
   const handleLoginError = useCallback((error: unknown) => {
     if (isUserCanceledSocialLogin(error)) {
