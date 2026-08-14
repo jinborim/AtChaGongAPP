@@ -3,7 +3,6 @@ import { apiClient } from "@/src/api/client";
 import type {
   LoginResponse,
   LogoutResponse,
-  ReissueResponse,
   SocialLoginRequest,
 } from "./types";
 
@@ -31,20 +30,5 @@ export function socialLogin(request: SocialLoginRequest) {
 export function logout() {
   return apiClient.request<LogoutResponse>("/auth/logout", {
     method: "POST",
-  });
-}
-
-/**
- * refresh token으로 앱 인증 토큰을 재발급합니다.
- *
- * @param refreshToken access token 재발급에 사용할 refresh token입니다.
- * @returns 새 access/refresh token 쌍입니다.
- * @throws {ApiError} refresh token이 만료, 폐기, 또는 유효하지 않으면 발생합니다.
- */
-export function reissueAuthTokens(refreshToken: string) {
-  return apiClient.request<ReissueResponse>("/auth/reissue", {
-    method: "POST",
-    body: { refreshToken },
-    auth: false,
   });
 }

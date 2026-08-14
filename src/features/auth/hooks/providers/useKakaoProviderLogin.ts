@@ -11,8 +11,6 @@ import {
 } from "../../socialProvider";
 import type { RunProviderLogin } from "../types";
 
-const MISSING_KAKAO_REST_API_KEY = "missing-kakao-rest-api-key";
-
 const KAKAO_DISCOVERY = {
   authorizationEndpoint: "https://kauth.kakao.com/oauth/authorize",
 };
@@ -26,14 +24,15 @@ const KAKAO_DISCOVERY = {
  */
 export function useKakaoProviderLogin(runLogin: RunProviderLogin) {
   const redirectUri = useMemo(() => getAuthRedirectUri("kakao"), []);
+  const canPrepareKakaoRequest = Boolean(KAKAO_REST_API_KEY);
 
   const [request, , promptAsync] = AuthSession.useAuthRequest(
     {
-      clientId: KAKAO_REST_API_KEY || MISSING_KAKAO_REST_API_KEY,
+      clientId: KAKAO_REST_API_KEY,
       redirectUri,
       responseType: AuthSession.ResponseType.Code,
     },
-    KAKAO_DISCOVERY,
+    canPrepareKakaoRequest ? KAKAO_DISCOVERY : null,
   );
 
   const signIn = useCallback(async () => {
@@ -57,6 +56,21 @@ export function useKakaoProviderLogin(runLogin: RunProviderLogin) {
         throw new SocialProviderError(
           "SOCIAL_LOGIN_CANCELED",
           "Kakao 로그인이 취소되었습니다.",
+        );
+      }
+
+      if (response.type === "error") {
+        const providerErrorMessage = [
+          response.error?.message,
+          response.params.error,
+          response.params.error_description,
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        throw new SocialProviderError(
+          "KAKAO_LOGIN_FAILED",
+          providerErrorMessage || "Kakao 로그인에 실패했습니다.",
         );
       }
 
