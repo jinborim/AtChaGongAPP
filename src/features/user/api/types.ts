@@ -18,11 +18,3 @@ export type UpdateNicknameResponse = {
   userId: string;
   nickname: string;
 };
-
-export type CompleteOnboardingRequest = {
-  completed: true;
-};
-
-export type CompleteOnboardingResponse = {
-  completed: boolean;
-};

@@ -30,7 +30,7 @@ export default function Onboarding3() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="온보딩 건너뛰기"
-            onPress={() => router.replace("/router/homeSetting")}
+            onPress={() => router.replace("/onboardingnickname")}
             className="absolute right-4 top-2 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
           >

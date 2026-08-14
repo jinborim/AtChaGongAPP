@@ -1,7 +1,6 @@
 import { clearAuthTokens } from "@/src/api";
 import { useSocialProviderLogin } from "@/src/features/auth/hooks";
 import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
-import type { SocialLoginResult } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
 import { getMe } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,7 +17,6 @@ import {
 } from "react-native";
 
 const NICKNAME_STORAGE_KEY = "nickname";
-const ONBOARDING_HAS_NICKNAME_KEY = "atchagong.onboarding.hasNickname";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -27,14 +25,8 @@ export default function LoginScreen() {
   >(null);
 
   const handleLoginSuccess = useCallback(
-    async ({ isOnboardingCompleted }: SocialLoginResult) => {
+    async () => {
       setWebLoginErrorMessage(null);
-
-      if (isOnboardingCompleted) {
-        await AsyncStorage.removeItem(ONBOARDING_HAS_NICKNAME_KEY);
-        router.replace("/router/homeSetting");
-        return;
-      }
 
       let me;
 
@@ -48,12 +40,9 @@ export default function LoginScreen() {
       const serverNickname = me.nickname.trim();
 
       if (serverNickname.length > 0) {
-        await AsyncStorage.multiSet([
-          [NICKNAME_STORAGE_KEY, serverNickname],
-          [ONBOARDING_HAS_NICKNAME_KEY, "true"],
-        ]);
-      } else {
-        await AsyncStorage.removeItem(ONBOARDING_HAS_NICKNAME_KEY);
+        await AsyncStorage.setItem(NICKNAME_STORAGE_KEY, serverNickname);
+        router.replace("/router/homeSetting");
+        return;
       }
 
       router.replace("/onboarding.1");
