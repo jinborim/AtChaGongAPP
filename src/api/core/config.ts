@@ -15,5 +15,5 @@ export function getApiBaseUrl() {
     );
   }
 
-  return API_BASE_URL.replace(/\/$/, "");
+  return API_BASE_URL.replace(/\/+$/, "");
 }
