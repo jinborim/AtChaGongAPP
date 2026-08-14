@@ -1,7 +1,5 @@
 import * as WebBrowser from "expo-web-browser";
-import { useCallback } from "react";
 
-import { loginWithDevAuthTokens } from "../services";
 import { useAppleProviderLogin } from "./providers/useAppleProviderLogin";
 import { useGoogleProviderLogin } from "./providers/useGoogleProviderLogin";
 import { useKakaoProviderLogin } from "./providers/useKakaoProviderLogin";
@@ -22,10 +20,6 @@ export function useSocialProviderLogin(options: UseSocialProviderLoginOptions) {
   const google = useGoogleProviderLogin(runLogin);
   const kakao = useKakaoProviderLogin(runLogin);
   const signInWithApple = useAppleProviderLogin(runLogin);
-  const signInWithDevAuthTokens = useCallback(
-    () => runLogin("DEV", loginWithDevAuthTokens),
-    [runLogin],
-  );
 
   return {
     canUseGoogleLogin: google.canUseGoogleLogin,
@@ -33,7 +27,6 @@ export function useSocialProviderLogin(options: UseSocialProviderLoginOptions) {
     kakaoRequest: kakao.request,
     loginState,
     signInWithApple,
-    signInWithDevAuthTokens,
     signInWithGoogle: google.signIn,
     signInWithKakao: kakao.signIn,
   };

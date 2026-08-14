@@ -1,6 +1,6 @@
 import type { AuthType } from "../api";
 
-export type AuthLoginProvider = AuthType | "DEV";
+export type AuthLoginProvider = AuthType;
 
 export type SocialLoginResult = {
   /** 로그인 성공 후 온보딩 완료 여부입니다. false이면 온보딩 화면으로 이동합니다. */
