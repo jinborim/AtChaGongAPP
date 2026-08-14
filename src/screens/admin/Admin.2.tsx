@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -11,29 +12,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Header from "../../components/Header/Header";
 import {
   deleteAdminNotice,
-  endAdminNotice,
-  type AdminNotice,
   getAdminNotices,
-  isAdminNoticeEnded,
-} from "./noticeStorage";
+  type AdminNoticeSummary,
+} from "@/src/features/auth/api/adminApi";
+import Header from "../../components/Header/Header";
 
 const BACKGROUND = require("../../assets/images/Background.png");
 
 export default function Admin2() {
   const router = useRouter();
-  const [notices, setNotices] = useState<AdminNotice[]>([]);
+  const [notices, setNotices] = useState<AdminNoticeSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   const reloadNotices = useCallback(async () => {
     setLoadError(null);
 
     try {
-      setNotices(await getAdminNotices());
+      const response = await getAdminNotices();
+      setNotices(response.content);
     } catch (error) {
       setLoadError(
         error instanceof Error
@@ -50,8 +50,8 @@ export default function Admin2() {
       setIsLoading(true);
       setLoadError(null);
       getAdminNotices()
-        .then((storedNotices) => {
-          if (isActive) setNotices(storedNotices);
+        .then((response) => {
+          if (isActive) setNotices(response.content);
         })
         .catch((error: unknown) => {
           if (!isActive) return;
@@ -141,36 +141,50 @@ export default function Admin2() {
             ) : (
               notices.map((notice) => (
                 <NoticeCard
-                  key={notice.id}
+                  key={notice.noticeId}
                   notice={notice}
-                  menuOpen={openMenuId === notice.id}
+                  menuOpen={openMenuId === notice.noticeId}
                   onToggleMenu={() =>
                     setOpenMenuId((currentId) =>
-                      currentId === notice.id ? null : notice.id
+                      currentId === notice.noticeId ? null : notice.noticeId
                     )
                   }
+                  onOpen={() => {
+                    router.push({
+                      pathname: "/admin.5",
+                      params: { id: String(notice.noticeId) },
+                    });
+                  }}
                   onEdit={() => {
                     setOpenMenuId(null);
                     router.push({
                       pathname: "/admin.3",
                       params: {
-                        id: notice.id,
-                        title: notice.title,
-                        content: notice.content,
-                        startDate: notice.startDate,
-                        endDate: notice.endDate,
+                        id: String(notice.noticeId),
                       },
                     });
                   }}
-                  onEnd={() => {
-                    endAdminNotice(notice.id)
-                      .then(reloadNotices)
-                      .finally(() => setOpenMenuId(null));
-                  }}
                   onDelete={() => {
-                    deleteAdminNotice(notice.id)
-                      .then(reloadNotices)
-                      .finally(() => setOpenMenuId(null));
+                    setOpenMenuId(null);
+                    Alert.alert("공지 삭제", "이 공지를 삭제하시겠습니까?", [
+                      { text: "취소", style: "cancel" },
+                      {
+                        text: "삭제",
+                        style: "destructive",
+                        onPress: () => {
+                          deleteAdminNotice(notice.noticeId)
+                            .then(reloadNotices)
+                            .catch((error: unknown) => {
+                              Alert.alert(
+                                "공지 삭제 실패",
+                                error instanceof Error
+                                  ? error.message
+                                  : "공지를 삭제하지 못했습니다.",
+                              );
+                            });
+                        },
+                      },
+                    ]);
                   }}
                 />
               ))
@@ -183,11 +197,11 @@ export default function Admin2() {
 }
 
 type NoticeCardProps = {
-  notice: AdminNotice;
+  notice: AdminNoticeSummary;
   menuOpen: boolean;
   onToggleMenu: () => void;
+  onOpen: () => void;
   onEdit: () => void;
-  onEnd: () => void;
   onDelete: () => void;
 };
 
@@ -195,11 +209,11 @@ function NoticeCard({
   notice,
   menuOpen,
   onToggleMenu,
+  onOpen,
   onEdit,
-  onEnd,
   onDelete,
 }: NoticeCardProps) {
-  const isEnded = isAdminNoticeEnded(notice);
+  const isEnded = notice.status === "ended";
 
   return (
     <View
@@ -218,14 +232,23 @@ function NoticeCard({
           </Text>
         </View>
 
-        <View className="flex-1">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${notice.title} 공지사항 열기`}
+          onPress={onOpen}
+          className="flex-1"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
           <Text className="font-maru text-[16px] leading-6 text-primary">
             {notice.title}
           </Text>
           <Text className="mt-1 font-maru text-[12px] text-gray-300">
-            {notice.startDate} ~ {notice.endDate}
+            {formatApiDate(notice.publishStartsAt)} ~{" "}
+            {notice.publishEndsAt
+              ? formatApiDate(notice.publishEndsAt)
+              : "종료일 없음"}
           </Text>
-        </View>
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -240,7 +263,6 @@ function NoticeCard({
       {menuOpen && (
         <View className="absolute right-3 top-11 z-10 w-[112px] rounded-[8px] border border-gray-100 bg-white py-1">
           <MenuButton label="수정하기" onPress={onEdit} />
-          {!isEnded && <MenuButton label="종료하기" onPress={onEnd} />}
           <MenuButton label="삭제하기" onPress={onDelete} />
         </View>
       )}
@@ -259,4 +281,8 @@ function MenuButton({ label, onPress }: { label: string; onPress: () => void }) 
       <Text className="font-maru text-[12px] text-primary">{label}</Text>
     </Pressable>
   );
+}
+
+function formatApiDate(value: string) {
+  return value.slice(0, 10);
 }

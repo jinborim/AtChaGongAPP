@@ -2,10 +2,11 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { router, useLocalSearchParams } from "expo-router";
-import { CalendarDays } from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import { CalendarDays } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ImageBackground,
   KeyboardAvoidingView,
@@ -19,9 +20,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  createAdminNotice,
+  getAdminNotice,
+  updateAdminNotice,
+  type AdminNoticeStatus,
+} from "@/src/features/auth/api/adminApi";
 import Header from "../../components/Header/Header";
 import Admin4 from "./Admin.4";
-import { addAdminNotice, updateAdminNotice } from "./noticeStorage";
 
 const BACKGROUND = require("../../assets/images/Background.png");
 const PRIMARY_COLOR = "#18335E";
@@ -51,6 +57,61 @@ export default function Admin3() {
   const [draftDate, setDraftDate] = useState(new Date());
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingNotice, setIsLoadingNotice] = useState(Boolean(params.id));
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [noticeStatus, setNoticeStatus] =
+    useState<AdminNoticeStatus>("published");
+
+  useEffect(() => {
+    if (!params.id) return;
+
+    const noticeId = Number(params.id);
+    if (!Number.isInteger(noticeId) || noticeId < 1) {
+      Alert.alert("공지 조회 실패", "유효하지 않은 공지 ID입니다.");
+      setIsLoadingNotice(false);
+      return;
+    }
+
+    let isActive = true;
+    const currentDay = startOfDay(new Date());
+    setIsLoadingNotice(true);
+
+    getAdminNotice(noticeId)
+      .then((notice) => {
+        if (!isActive) return;
+
+        const loadedStartDate =
+          parseDate(notice.publishStartsAt) ?? currentDay;
+        const loadedEndDate = parseDate(notice.publishEndsAt) ?? loadedStartDate;
+
+        setTitle(notice.title);
+        setContent(notice.content);
+        setImgUrl(notice.imgUrl);
+        setNoticeStatus(notice.status);
+        setStartDate(loadedStartDate);
+        setEndDate(loadedEndDate);
+        setIsImmediate(
+          formatDate(loadedStartDate) === formatDate(currentDay),
+        );
+      })
+      .catch((error: unknown) => {
+        if (!isActive) return;
+
+        Alert.alert(
+          "공지 조회 실패",
+          error instanceof Error
+            ? error.message
+            : "공지 내용을 불러오지 못했습니다.",
+        );
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingNotice(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [params.id]);
 
   const openDatePicker = (target: "start" | "end") => {
     if (isImmediate && target === "start") return;
@@ -109,7 +170,13 @@ export default function Admin3() {
   };
 
   const submitNotice = async () => {
-    if (!title.trim() || !content.trim() || isSubmitting) return;
+    if (
+      !title.trim() ||
+      !content.trim() ||
+      isSubmitting ||
+      isLoadingNotice
+    )
+      return;
 
     setIsSubmitting(true);
 
@@ -117,17 +184,26 @@ export default function Admin3() {
       const noticeValues = {
         title: title.trim(),
         content: content.trim(),
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
+        imgUrl,
+        status: noticeStatus,
+        publishStartsAt: startOfDay(startDate).toISOString(),
+        publishEndsAt: endOfDay(endDate).toISOString(),
       };
 
       if (params.id) {
-        await updateAdminNotice(params.id, noticeValues);
+        const noticeId = Number(params.id);
+
+        if (!Number.isInteger(noticeId) || noticeId < 1) {
+          throw new Error("유효하지 않은 공지 ID입니다.");
+        }
+
+        await updateAdminNotice(noticeId, noticeValues);
       } else {
-        await addAdminNotice(noticeValues);
+        await createAdminNotice(noticeValues);
       }
       router.replace("/admin.2" as never);
-    } catch {
+    } catch (error) {
+      console.error("관리자 공지 저장 실패:", error);
       Alert.alert(
         "공지 저장에 실패했어요",
         "공지를 저장하거나 목록 화면으로 이동하지 못했습니다. 다시 시도해 주세요."
@@ -168,14 +244,16 @@ export default function Admin3() {
             rightAction={
               <Pressable
                 accessibilityRole="button"
-                accessibilityState={{ disabled: isSubmitting }}
-                disabled={isSubmitting}
+                accessibilityState={{
+                  disabled: isSubmitting || isLoadingNotice,
+                }}
+                disabled={isSubmitting || isLoadingNotice}
                 onPress={() => {
                   void submitNotice();
                 }}
                 className="rounded-full bg-primary px-5 py-2"
                 style={({ pressed }) => ({
-                  opacity: pressed || isSubmitting ? 0.7 : 1,
+                  opacity: pressed || isSubmitting || isLoadingNotice ? 0.7 : 1,
                 })}
               >
                 <Text className="font-maru text-[12px] text-white">
@@ -185,6 +263,11 @@ export default function Admin3() {
             }
           />
 
+          {isLoadingNotice ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator color={PRIMARY_COLOR} />
+            </View>
+          ) : (
           <ScrollView
             className="flex-1"
             contentContainerClassName="px-7 pb-10 pt-8"
@@ -194,6 +277,7 @@ export default function Admin3() {
             <TextInput
               value={title}
               onChangeText={setTitle}
+              maxLength={100}
               placeholder="공지 제목을 입력하세요"
               placeholderTextColor={PLACEHOLDER_COLOR}
               className="mt-3 h-12 rounded-[8px] border border-gray-100 bg-white px-4 font-maru text-[12px] text-primary"
@@ -271,6 +355,7 @@ export default function Admin3() {
               </Pressable>
             </View>
           </ScrollView>
+          )}
 
           <Modal
             visible={pickerTarget !== null && Platform.OS === "ios"}
@@ -401,11 +486,23 @@ function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function parseDate(value?: string) {
+function endOfDay(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+}
+
+function parseDate(value?: string | null) {
   if (!value) return null;
 
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return null;
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) return null;
 
-  return new Date(year, month - 1, day);
+  return startOfDay(parsedDate);
 }

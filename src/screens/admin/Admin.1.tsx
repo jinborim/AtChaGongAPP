@@ -1,7 +1,9 @@
-import { router } from "expo-router";
+import { getAdminUserSummary } from "@/src/features/auth/api/adminApi";
+import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   ImageBackground,
   Pressable,
@@ -15,6 +17,40 @@ const ADMIN_PENGUIN = require("../../assets/images/AdminPenguin.gif");
 const ADMINNOTICE = require("../../assets/images/AdminNotice.png");
 
 export default function Admin1() {
+  const [totalUserCount, setTotalUserCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      setIsLoading(true);
+      setLoadError(null);
+
+      getAdminUserSummary()
+        .then((summary) => {
+          if (isActive) setTotalUserCount(summary.totalUserCount);
+        })
+        .catch((error: unknown) => {
+          if (!isActive) return;
+
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "사용자 수를 불러오지 못했습니다.",
+          );
+        })
+        .finally(() => {
+          if (isActive) setIsLoading(false);
+        });
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
   return (
     <ImageBackground
       source={BACKGROUND}
@@ -35,9 +71,13 @@ export default function Admin1() {
                 활성 유저 수
               </Text>
               <View className="mt-4 flex-row items-end">
-                <Text className="font-maru text-[28px] text-primary">
-                  1,234
-                </Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#34495e" />
+                ) : (
+                  <Text className="font-maru text-[28px] text-primary">
+                    {loadError ? "-" : totalUserCount.toLocaleString()}
+                  </Text>
+                )}
                 <Text className="mb-1 ml-1 font-maru text-[12px] text-gray-300">
                   명
                 </Text>
