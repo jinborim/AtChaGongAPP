@@ -56,14 +56,15 @@ async function request<T>(
       try {
         tokens = await reissueTokens(refreshTokenBeforeReissue);
       } catch (reissueError) {
-        if (
+        const isSessionChanged =
           reissueError instanceof ApiError &&
-          reissueError.code === "AUTH_SESSION_CHANGED"
-        ) {
-          throw reissueError;
-        }
+          reissueError.code === "AUTH_SESSION_CHANGED";
+        const isRefreshTokenInvalid =
+          reissueError instanceof ApiError &&
+          reissueError.status === 401 &&
+          !isSessionChanged;
 
-        if (refreshTokenBeforeReissue) {
+        if (isRefreshTokenInvalid && refreshTokenBeforeReissue) {
           await clearAuthTokensIfRefreshTokenMatches(refreshTokenBeforeReissue);
         }
 
