@@ -135,7 +135,6 @@ function SettingCard({
 export default function TimerSettingScreen() {
   const router = useRouter();
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
-  const [breakMinutes, setBreakMinutes] = useState(BREAK_MINUTES);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -151,7 +150,6 @@ export default function TimerSettingScreen() {
         const timerSettings = await getTimerSettings();
 
         setFocusMinutes(normalizeFocusMinutes(timerSettings.focusMinutes));
-        setBreakMinutes(BREAK_MINUTES);
       } catch (error) {
         console.log("타이머 서버 설정 불러오기 오류:", error);
       }
@@ -227,7 +225,7 @@ export default function TimerSettingScreen() {
           />
           <SettingCard
             label="휴식 시간"
-            value={breakMinutes}
+            value={BREAK_MINUTES}
             unit="분"
             iconSource={SETTING_ICONS.break}
           />

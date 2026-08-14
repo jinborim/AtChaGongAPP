@@ -1,5 +1,13 @@
-import { useEffect, useRef } from "react";
-import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import {
+  Animated,
+  Easing,
+  Image,
+  StyleSheet,
+  Text,
+  useAnimatedValue,
+  View,
+} from "react-native";
 
 export type TimerSessionPhase = "focus" | "break";
 
@@ -20,9 +28,8 @@ const SESSION_CONTENT = {
 export default function TimerSessionContent({
   phase,
 }: TimerSessionContentProps) {
-  const breakOpacity = useRef(
-    new Animated.Value(phase === "break" ? 1 : 0),
-  ).current;
+  const isBreakPhase = phase === "break";
+  const breakOpacity = useAnimatedValue(isBreakPhase ? 1 : 0);
   const focusOpacity = breakOpacity.interpolate({
     inputRange: [0, 1],
     outputRange: [1, 0],
@@ -30,17 +37,23 @@ export default function TimerSessionContent({
 
   useEffect(() => {
     Animated.timing(breakOpacity, {
-      toValue: phase === "break" ? 1 : 0,
+      toValue: isBreakPhase ? 1 : 0,
       duration: 220,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [breakOpacity, phase]);
+  }, [breakOpacity, isBreakPhase]);
 
   return (
     <View className="mt-8 h-[324px] w-full items-center">
       <View className="h-6 justify-center">
-        <Animated.View style={{ opacity: breakOpacity }}>
+        <Animated.View
+          accessibilityElementsHidden={!isBreakPhase}
+          importantForAccessibility={
+            isBreakPhase ? "auto" : "no-hide-descendants"
+          }
+          style={{ opacity: breakOpacity }}
+        >
           <Text className="font-maru text-base font-bold text-gray-300">
             {SESSION_CONTENT.break.description}
           </Text>

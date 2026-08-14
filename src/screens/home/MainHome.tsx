@@ -5,14 +5,9 @@ import TimerSessionContent, {
   type TimerSessionPhase,
 } from "@/src/components/TimerSessionContent";
 import {
-  getStatisticsSummary,
-  type StatisticsSummary,
-} from "@/src/features/statistics";
-import {
   completeFocusRecord,
   getTimerSettings,
   updateTimerSettings,
-  type Beverage,
 } from "@/src/features/timer";
 import { getMe } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -61,10 +56,6 @@ export default function StudyScreen() {
   const [currentCycle, setCurrentCycle] = useState(MIN_CYCLE_COUNT);
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
-  const [beverage, setBeverage] = useState<Beverage | null>(null);
-  const [todaySummary, setTodaySummary] = useState<StatisticsSummary | null>(
-    null,
-  );
   const isRunningRef = useRef(isRunning);
   const timerStartedAtRef = useRef<string | null>(null);
 
@@ -90,26 +81,31 @@ export default function StudyScreen() {
 
         if (!isActive) return;
 
-        setFocusMinutes(minutes);
-        setCycleCount(cycles);
-        setCurrentCycle(MIN_CYCLE_COUNT);
-        setTimerPhase("focus");
-        setRemainingMilliseconds(duration);
+        if (!isRunningRef.current) {
+          setFocusMinutes(minutes);
+          setCycleCount(cycles);
+          setCurrentCycle(MIN_CYCLE_COUNT);
+          setTimerPhase("focus");
+          setRemainingMilliseconds(duration);
+          setEndTime(null);
+          setIsRunning(false);
+        }
 
         if (TIMER_QA_MODE) {
           setNickname("QA 사용자");
-          setFocusMinutes(DEFAULT_FOCUS_MINUTES);
-          setCycleCount(MAX_CYCLE_COUNT);
-          setCurrentCycle(MIN_CYCLE_COUNT);
+          if (!isRunningRef.current) {
+            setFocusMinutes(DEFAULT_FOCUS_MINUTES);
+            setCycleCount(MAX_CYCLE_COUNT);
+            setCurrentCycle(MIN_CYCLE_COUNT);
+          }
           await AsyncStorage.setItem("cycleCount", String(MAX_CYCLE_COUNT));
           return;
         }
 
         try {
-          const [me, timerSettings, statisticsSummary] = await Promise.all([
+          const [me, timerSettings] = await Promise.all([
             getMe(),
             getTimerSettings(),
-            getStatisticsSummary("TODAY"),
           ]);
 
           if (!isActive) return;
@@ -124,15 +120,13 @@ export default function StudyScreen() {
             getFocusDurationMilliseconds(serverFocusMinutes);
 
           setNickname(me.nickname || DEFAULT_NICKNAME);
-          setBeverage(timerSettings.beverage);
-          setTodaySummary(statisticsSummary);
-          setFocusMinutes(serverFocusMinutes);
-          setCycleCount(serverCycleCount);
-          setCurrentCycle((previous) =>
-            Math.min(serverCycleCount, previous),
-          );
 
           if (!isRunningRef.current) {
+            setFocusMinutes(serverFocusMinutes);
+            setCycleCount(serverCycleCount);
+            setCurrentCycle((previous) =>
+              Math.min(serverCycleCount, previous),
+            );
             setRemainingMilliseconds(serverDuration);
           }
 
@@ -175,8 +169,6 @@ export default function StudyScreen() {
       });
 
       timerStartedAtRef.current = null;
-      const statisticsSummary = await getStatisticsSummary("TODAY");
-      setTodaySummary(statisticsSummary);
     },
     [focusMinutes],
   );
@@ -252,9 +244,6 @@ export default function StudyScreen() {
       : breakDurationMilliseconds === 0
         ? 0
         : 1 - remainingMilliseconds / breakDurationMilliseconds;
-  const focusedMinutes = Math.floor(
-    (todaySummary?.totalFocusedSeconds ?? 0) / 60,
-  );
 
   const startTimer = async () => {
     if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;

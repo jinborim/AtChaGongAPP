@@ -1,7 +1,7 @@
 export type StatisticsPeriod = "TODAY" | "MONTH" | "ALL";
 
 export type StatisticsSummary = {
-  period: string;
+  period: StatisticsPeriod;
   totalFocusedSeconds: number;
   totalFocusedHours: number;
   currentStreakDays: number;
