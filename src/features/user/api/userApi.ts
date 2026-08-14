@@ -1,6 +1,8 @@
 import { apiClient } from "@/src/api/client";
 
 import type {
+  CompleteOnboardingRequest,
+  CompleteOnboardingResponse,
   Me,
   UpdateNicknameRequest,
   UpdateNicknameResponse,
@@ -15,4 +17,16 @@ export function updateNickname(request: UpdateNicknameRequest) {
     method: "PATCH",
     body: request,
   });
+}
+
+export function completeOnboarding() {
+  const request: CompleteOnboardingRequest = { completed: true };
+
+  return apiClient.request<CompleteOnboardingResponse>(
+    "/users/me/onboarding",
+    {
+      method: "PATCH",
+      body: request,
+    },
+  );
 }

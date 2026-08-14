@@ -3,7 +3,7 @@ export type UserStatus = "ACTIVE" | "INACTIVE" | "WITHDRAWN" | string;
 export type UserRole = "USER" | "ADMIN" | string;
 
 export type Me = {
-  nickname: string;
+  nickname: string | null;
   userStatus: UserStatus;
   userRole: UserRole;
   onboardingCompleted: boolean;
@@ -17,4 +17,12 @@ export type UpdateNicknameRequest = {
 export type UpdateNicknameResponse = {
   userId: string;
   nickname: string;
+};
+
+export type CompleteOnboardingRequest = {
+  completed: true;
+};
+
+export type CompleteOnboardingResponse = {
+  completed: boolean;
 };

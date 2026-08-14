@@ -1,6 +1,5 @@
-import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useState } from "react";
 import {
   ImageBackground,
   Pressable,
@@ -8,10 +7,27 @@ import {
   Text,
   View,
 } from "react-native";
+import { completeOnboardingWithAlert } from "./onboardingCompletion";
 
 const BACKGROUND = require("../../assets/images/Background.png");
 
 export default function Onboarding4() {
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const finishOnboarding = async () => {
+    if (isCompleting) {
+      return;
+    }
+
+    setIsCompleting(true);
+
+    try {
+      await completeOnboardingWithAlert();
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <ImageBackground
       source={BACKGROUND}
@@ -28,7 +44,11 @@ export default function Onboarding4() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="온보딩 건너뛰기"
-            onPress={() => router.replace("/onboardingnickname")}
+            accessibilityState={{ disabled: isCompleting }}
+            disabled={isCompleting}
+            onPress={() => {
+              void finishOnboarding();
+            }}
             className="absolute right-4 top-2 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
           >
@@ -68,11 +88,10 @@ export default function Onboarding4() {
             </View>
           </View>
 
-         
-            <View
+          <View
             className="absolute bottom-[160px] flex-row items-center gap-8"
             accessibilityLabel="온보딩 4/4"
-            >
+          >
             <View className="h-5 w-5 rounded-full bg-gray-300" />
             <View className="h-5 w-5 rounded-full bg-gray-300" />
             <View className="h-5 w-5 rounded-full bg-gray-300" />
@@ -82,12 +101,16 @@ export default function Onboarding4() {
           <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.replace("/onboardingnickname")}
+              accessibilityState={{ disabled: isCompleting }}
+              disabled={isCompleting}
+              onPress={() => {
+                void finishOnboarding();
+              }}
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >
               <Text className="font-maru text-[12px] text-primary">
-                다음
+                {isCompleting ? "처리 중" : "다음"}
               </Text>
             </Pressable>
           </View>

@@ -3,7 +3,6 @@ import { useSocialProviderLogin } from "@/src/features/auth/hooks";
 import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
 import { getMe } from "@/src/features/user";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -15,8 +14,10 @@ import {
   Text,
   View,
 } from "react-native";
-
-const NICKNAME_STORAGE_KEY = "nickname";
+import {
+  cacheOnboardingNickname,
+  hasUsableNickname,
+} from "../onboarding/onboardingCompletion";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -37,11 +38,19 @@ export default function LoginScreen() {
         throw error;
       }
 
-      const serverNickname = me.nickname.trim();
+      const serverNickname = me.nickname?.trim() ?? "";
+      const hasNickname = hasUsableNickname(serverNickname);
 
-      if (serverNickname.length > 0) {
-        await AsyncStorage.setItem(NICKNAME_STORAGE_KEY, serverNickname);
-        router.replace("/router/homeSetting");
+      if (hasNickname) {
+        await cacheOnboardingNickname(serverNickname);
+      } else {
+        await cacheOnboardingNickname("");
+      }
+
+      if (me.onboardingCompleted) {
+        router.replace(
+          hasNickname ? "/router/homeSetting" : "/onboardingnickname",
+        );
         return;
       }
 
