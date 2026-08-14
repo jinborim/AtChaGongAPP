@@ -4,9 +4,8 @@ const AUTH_REDIRECT_PATH = "auth";
 const APP_SCHEME = "atchagongapp";
 
 export const GOOGLE_CLIENT_IDS = {
-  // android: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? "",
-  // ios: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "",
-  web: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "",
+  android: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? "",
+  ios: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "",
 };
 
 export const KAKAO_REST_API_KEY =
