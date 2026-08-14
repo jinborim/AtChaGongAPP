@@ -1,4 +1,7 @@
-import { KAKAO_REST_API_KEY } from "./providerConfig";
+import {
+  IS_KAKAO_CLIENT_SECRET_DISABLED,
+  KAKAO_REST_API_KEY,
+} from "./providerConfig";
 import { SocialProviderError } from "./socialProviderError";
 
 const KAKAO_TOKEN_ENDPOINT = "https://kauth.kakao.com/oauth/token";
@@ -39,6 +42,13 @@ export async function exchangeKakaoAuthCode({
   codeVerifier?: string;
   redirectUri: string;
 }) {
+  if (!IS_KAKAO_CLIENT_SECRET_DISABLED) {
+    throw new SocialProviderError(
+      "KAKAO_CLIENT_SECRET_REQUIRES_SERVER_EXCHANGE",
+      "Kakao Client Secret이 켜져 있으면 클라이언트에서 토큰을 교환할 수 없습니다.",
+    );
+  }
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: KAKAO_REST_API_KEY,
