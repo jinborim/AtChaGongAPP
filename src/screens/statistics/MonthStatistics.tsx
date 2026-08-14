@@ -8,17 +8,8 @@ import DayDetailModal from "./DayDetailModal";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default function MonthStatistics() {
-  const {
-    year,
-    month,
-    monthData,
-    selectedDate,
-    selectedDayDetail,
-    isLoadingMonth,
-    isLoadingDay,
-    moveMonth,
-    selectDay,
-  } = useMonthStatistics();
+  const { year, month, monthData, selectedDayDetail, moveMonth, selectDay } =
+    useMonthStatistics();
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const dayIntensityMap = useMemo(() => {
     const map = new Map<number, number>();
