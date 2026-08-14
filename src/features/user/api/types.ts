@@ -9,3 +9,20 @@ export type Me = {
   onboardingCompleted: boolean;
   lastLoginAt: string | null;
 };
+
+export type UpdateNicknameRequest = {
+  nickname: string;
+};
+
+export type UpdateNicknameResponse = {
+  userId: string;
+  nickname: string;
+};
+
+export type CompleteOnboardingRequest = {
+  completed: true;
+};
+
+export type CompleteOnboardingResponse = {
+  completed: boolean;
+};
