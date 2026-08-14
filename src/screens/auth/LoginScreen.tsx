@@ -40,6 +40,7 @@ export default function LoginScreen() {
   }, []);
 
   const {
+    canUseGoogleLogin,
     googleRequest,
     kakaoRequest,
     loginState,
@@ -77,8 +78,9 @@ export default function LoginScreen() {
         </Text>
       </View>
       <View className="mt-auto mb-20 w-[280px] gap-4 self-center">
-        <Pressable
-          className="
+        {canUseGoogleLogin && (
+          <Pressable
+            className="
               h-[45px]
               flex-row
               items-center
@@ -87,22 +89,23 @@ export default function LoginScreen() {
               bg-white
               active:bg-gray-100
             "
-          disabled={isGoogleDisabled}
-          onPress={() => {
-            void signInWithGoogle();
-          }}
-        >
-          <Image
-            source={require("../../assets/images/Google.png")}
-            className="absolute left-5 h-[22px] w-[22px]"
-            resizeMode="contain"
-          />
-          <Text className="font-maru text-sm text-primary">
-            {loginState.provider === "GOOGLE"
-              ? "Google 로그인 중"
-              : "Google로 계속하기"}
-          </Text>
-        </Pressable>
+            disabled={isGoogleDisabled}
+            onPress={() => {
+              void signInWithGoogle();
+            }}
+          >
+            <Image
+              source={require("../../assets/images/Google.png")}
+              className="absolute left-5 h-[22px] w-[22px]"
+              resizeMode="contain"
+            />
+            <Text className="font-maru text-sm text-primary">
+              {loginState.provider === "GOOGLE"
+                ? "Google 로그인 중"
+                : "Google로 계속하기"}
+            </Text>
+          </Pressable>
+        )}
 
         {/* Kakao */}
         <Pressable

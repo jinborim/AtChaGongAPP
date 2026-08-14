@@ -104,6 +104,7 @@ export function useGoogleProviderLogin(runLogin: RunProviderLogin) {
   const redirectUri = useMemo(() => getAuthRedirectUri("google"), []);
   const nonce = useMemo(() => createGoogleNonce(), []);
   const googleClientId = getGoogleClientId();
+  const canUseGoogleLogin = Platform.OS !== "web" && Boolean(googleClientId);
 
   const [request, , promptAsync] = AuthSession.useAuthRequest(
     {
@@ -166,6 +167,7 @@ export function useGoogleProviderLogin(runLogin: RunProviderLogin) {
   }, [googleClientId, nonce, promptAsync, request, runLogin]);
 
   return {
+    canUseGoogleLogin,
     request,
     signIn,
   };

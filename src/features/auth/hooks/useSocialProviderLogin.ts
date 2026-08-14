@@ -28,6 +28,7 @@ export function useSocialProviderLogin(options: UseSocialProviderLoginOptions) {
   );
 
   return {
+    canUseGoogleLogin: google.canUseGoogleLogin,
     googleRequest: google.request,
     kakaoRequest: kakao.request,
     loginState,
