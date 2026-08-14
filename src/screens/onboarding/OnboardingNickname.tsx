@@ -49,8 +49,24 @@ function getNicknameErrorMessage(error: unknown) {
   }
 }
 
+function getOnboardingCompletionErrorMessage(error: unknown) {
+  if (!(error instanceof ApiError)) {
+    return "닉네임은 저장됐지만 온보딩 완료 처리에 실패했습니다. 다시 시도해 주세요.";
+  }
+
+  switch (error.code) {
+    case "BAD_REQUEST":
+      return "닉네임은 저장됐지만 온보딩 완료 요청에 실패했습니다. 다시 시도해 주세요.";
+    case "NETWORK_ERROR":
+      return "닉네임은 저장됐지만 네트워크 문제로 온보딩 완료 처리에 실패했습니다. 다시 시도해 주세요.";
+    default:
+      return getNicknameErrorMessage(error);
+  }
+}
+
 export default function OnboardingNickname() {
   const [nickname, setNickname] = useState("");
+  const [savedNickname, setSavedNickname] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const trimmedNickname = nickname.trim();
   const canStart = trimmedNickname.length > 0 && !isSaving;
@@ -59,11 +75,18 @@ export default function OnboardingNickname() {
     if (!canStart) return;
 
     setIsSaving(true);
+    let failedStep: "nickname" | "onboarding" = "nickname";
 
     try {
-      const response = await updateNickname({ nickname: trimmedNickname });
+      if (savedNickname !== trimmedNickname) {
+        const response = await updateNickname({ nickname: trimmedNickname });
+        await AsyncStorage.setItem("nickname", response.nickname);
+        setNickname(response.nickname);
+        setSavedNickname(response.nickname);
+      }
+
+      failedStep = "onboarding";
       await completeOnboarding();
-      await AsyncStorage.setItem("nickname", response.nickname);
       router.replace("/router/homeSetting");
     } catch (error) {
       const shouldReturnToLogin =
@@ -74,16 +97,24 @@ export default function OnboardingNickname() {
         await clearAuthTokens();
       }
 
-      Alert.alert("저장에 실패했어요", getNicknameErrorMessage(error), [
-        {
-          text: "확인",
-          onPress: () => {
-            if (shouldReturnToLogin) {
-              router.replace("/login");
-            }
+      Alert.alert(
+        failedStep === "nickname"
+          ? "저장에 실패했어요"
+          : "처리에 실패했어요",
+        failedStep === "nickname"
+          ? getNicknameErrorMessage(error)
+          : getOnboardingCompletionErrorMessage(error),
+        [
+          {
+            text: "확인",
+            onPress: () => {
+              if (shouldReturnToLogin) {
+                router.replace("/login");
+              }
+            },
           },
-        },
-      ]);
+        ],
+      );
     } finally {
       setIsSaving(false);
     }
