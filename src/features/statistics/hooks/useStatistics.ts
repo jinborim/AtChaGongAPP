@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchDailyRecordService,
   fetchMonthStatisticsService,
@@ -7,6 +7,7 @@ import {
 } from "../services/statisticsService";
 
 export function useMonthStatistics() {
+  const latestMonthRequestId = useRef(0);
   // 1. 현재 선택된 연/월 관리 (기본값: 오늘 날짜)
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
@@ -30,21 +31,25 @@ export function useMonthStatistics() {
   // [월별 통계 Fetch] 연/월 변경 시 자동 호출
   // -------------------------------------------------------------
   const loadMonthStatistics = useCallback(async () => {
+    const requestId = ++latestMonthRequestId.current;
     setIsLoadingMonth(true);
     setError(null);
+    setMonthData(null);
+    setSelectedDate(null);
+    setSelectedDayDetail(null);
     try {
       const data = await fetchMonthStatisticsService(year, month);
+      if (requestId !== latestMonthRequestId.current) return;
       setMonthData(data);
-      // 월이 이동하면 선택된 일자 상세 정보 초기화
-      setSelectedDate(null);
-      setSelectedDayDetail(null);
     } catch (err) {
+      if (requestId !== latestMonthRequestId.current) return;
       setError(
         err instanceof Error
           ? err
           : new Error("월별 통계를 가져오는 중 오류가 발생했습니다."),
       );
     } finally {
+      if (requestId !== latestMonthRequestId.current) return;
       setIsLoadingMonth(false);
     }
   }, [year, month]);
@@ -65,22 +70,31 @@ export function useMonthStatistics() {
   // -------------------------------------------------------------
   // [이벤트] 날짜(일자) 클릭 핸들러
   // -------------------------------------------------------------
+  const latestDateRef = useRef<string | null>(null);
   const selectDay = useCallback(
     async (dayNumber: number) => {
       const formattedMonth = String(month).padStart(2, "0");
       const formattedDay = String(dayNumber).padStart(2, "0");
       const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
 
+      setSelectedDayDetail(null);
       setSelectedDate(dateStr);
       setIsLoadingDay(true);
+      // 최신 요청 날짜를 현재 날짜(dateStr)로 업데이트
+      latestDateRef.current = dateStr;
 
       try {
         const detail = await fetchDailyRecordService(dateStr);
-        setSelectedDayDetail(detail);
+        // 응답이 왔을 때, 여전히 최신 요청(dateStr)과 일치하는지 확인
+        if (latestDateRef.current === dateStr) {
+          setSelectedDayDetail(detail);
+        }
       } catch (err) {
         console.error("일별 상세 조회 실패:", err);
       } finally {
-        setIsLoadingDay(false);
+        if (latestDateRef.current === dateStr) {
+          setIsLoadingDay(false);
+        }
       }
     },
     [year, month],

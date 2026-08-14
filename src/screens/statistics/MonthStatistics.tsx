@@ -44,6 +44,13 @@ export default function MonthStatistics() {
     setSelectedDay(day);
     selectDay(day); // API 호출
   };
+  // intensity 수치에 따라 색상 변동
+  const getIntensityBgClass = (intensity: number) => {
+    if (intensity <= 0) return "bg-gray-100";
+    if (intensity <= 2) return "bg-[#B7DEFF]";
+    if (intensity <= 4) return "bg-secondary";
+    return "bg-[#4088FD]"; // 5 이상
+  };
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -106,10 +113,9 @@ export default function MonthStatistics() {
                 <View className="relative h-10 w-10">
                   {/* 내부 배경 */}
                   <View
-                    className={`absolute bottom-1 left-1 right-1 top-1 ${
-                      intensity > 0 ? "bg-secondary" : "bg-gray-100"
-                    }`}
+                    className={`absolute bottom-1 left-1 right-1 top-1 ${getIntensityBgClass(intensity)}`}
                   />
+
                   <View className="absolute left-1 right-1 top-0 h-1 bg-primary" />
                   <View className="absolute bottom-0 left-1 right-1 h-1 bg-primary" />
                   <View className="absolute bottom-1 left-0 top-1 w-1 bg-primary" />
