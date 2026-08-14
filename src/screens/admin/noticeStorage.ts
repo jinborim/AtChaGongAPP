@@ -70,6 +70,11 @@ export async function updateAdminNotice(
 ) {
   return enqueueNoticeMutation(async () => {
     const notices = await getAdminNotices();
+
+    if (!notices.some((notice) => notice.id === id)) {
+      throw new Error("수정할 공지사항을 찾을 수 없습니다.");
+    }
+
     const updatedNotices = notices.map((notice) =>
       notice.id === id ? { ...notice, ...changes } : notice
     );

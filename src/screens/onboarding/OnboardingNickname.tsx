@@ -108,10 +108,9 @@ export default function OnboardingNickname() {
             onPress={() => {
             void startApp();
             }}
-          className={`mb-4 mt-auto h-[52px] w-full items-center justify-center rounded-[8px] bg-primary ${
+          className={`mb-4 mt-auto h-[52px] w-full items-center justify-center rounded-[8px] bg-primary active:opacity-70 ${
             canStart ? "opacity-100" : "opacity-50"
           }`}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : undefined })}
         >
           <Text className="font-maru text-[12px] text-white">
             {isSaving ? "저장 중" : "시작하기"}

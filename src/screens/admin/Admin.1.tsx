@@ -32,7 +32,7 @@ export default function Admin1() {
           <View className="mt-10 h-[136px] flex-row items-center rounded-[8px] border border-gray-100 bg-white px-6">
             <View className="flex-1">
               <Text className="font-maru text-[14px] text-primary">
-                발행 유지 수
+                활성 유저 수
               </Text>
               <View className="mt-4 flex-row items-end">
                 <Text className="font-maru text-[28px] text-primary">
