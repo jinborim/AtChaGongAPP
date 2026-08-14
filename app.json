@@ -1,29 +1,34 @@
 {
   "expo": {
     "name": "AtChaGongApp",
-    "slug": "AtChaGongApp",
+    "slug": "atchagong",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./src/assets/images/Penguin1.png",
     "scheme": "atchagongapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.atchagong.atchagong",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./src/assets/images/AndroidForeground.png",
+        "backgroundImage": "./src/assets/images/AndroidBackground.png",
+        "monochromeImage": "./src/assets/images/AndroidMonochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.atchagong.app"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png",
+      "favicon": "./src/assets/images/Favicon.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -31,7 +36,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./src/assets/images/Splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -40,11 +45,18 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "af6077a3-64d4-4a2d-a311-45b17015fd17"
+      }
+    },
+    "owner": "atchagong"
   }
 }
