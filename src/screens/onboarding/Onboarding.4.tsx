@@ -82,7 +82,7 @@ export default function Onboarding4() {
           <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.replace("/router/homeSetting")} // 닉네임 정하는 페이지 만들면 수정
+              onPress={() => router.replace("/onboardingnickname")}
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >
