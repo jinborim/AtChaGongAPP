@@ -1,5 +1,6 @@
 import { ApiError, clearAuthTokens } from "@/src/api";
 import { completeOnboarding } from "@/src/features/user";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 
 const BACKGROUND = require("../../assets/images/Background.png");
+const ONBOARDING_HAS_NICKNAME_KEY = "atchagong.onboarding.hasNickname";
 
 function getOnboardingErrorMessage(error: unknown) {
   if (!(error instanceof ApiError)) {
@@ -44,7 +46,7 @@ function getOnboardingErrorMessage(error: unknown) {
 export default function Onboarding4() {
   const [isCompleting, setIsCompleting] = useState(false);
 
-  const skipOnboarding = async () => {
+  const completeOnboardingAndGoHome = async () => {
     if (isCompleting) {
       return;
     }
@@ -53,6 +55,7 @@ export default function Onboarding4() {
 
     try {
       await completeOnboarding();
+      await AsyncStorage.removeItem(ONBOARDING_HAS_NICKNAME_KEY);
       router.replace("/router/homeSetting");
     } catch (error) {
       const shouldReturnToLogin =
@@ -78,6 +81,22 @@ export default function Onboarding4() {
     }
   };
 
+  const goNext = async () => {
+    if (isCompleting) {
+      return;
+    }
+
+    const hasNickname =
+      (await AsyncStorage.getItem(ONBOARDING_HAS_NICKNAME_KEY)) === "true";
+
+    if (hasNickname) {
+      await completeOnboardingAndGoHome();
+      return;
+    }
+
+    router.replace("/onboardingnickname");
+  };
+
   return (
     <ImageBackground
       source={BACKGROUND}
@@ -97,7 +116,7 @@ export default function Onboarding4() {
             accessibilityState={{ disabled: isCompleting }}
             disabled={isCompleting}
             onPress={() => {
-              void skipOnboarding();
+              void completeOnboardingAndGoHome();
             }}
             className="absolute right-4 top-2 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
@@ -154,7 +173,9 @@ export default function Onboarding4() {
               accessibilityRole="button"
               accessibilityState={{ disabled: isCompleting }}
               disabled={isCompleting}
-              onPress={() => router.replace("/onboardingnickname")}
+              onPress={() => {
+                void goNext();
+              }}
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >

@@ -21,6 +21,7 @@ const BACKGROUND = require("../../assets/images/Background.png");
 const PENGUIN = require("../../assets/images/Penguin1.png");
 const SPEECH_BUBBLE = require("../../assets/images/SpeechBubble.png");
 const PLACEHOLDER_COLOR = "#A2AAB0";
+const ONBOARDING_HAS_NICKNAME_KEY = "atchagong.onboarding.hasNickname";
 
 function getNicknameErrorMessage(error: unknown) {
   if (!(error instanceof ApiError)) {
@@ -87,6 +88,7 @@ export default function OnboardingNickname() {
 
       failedStep = "onboarding";
       await completeOnboarding();
+      await AsyncStorage.removeItem(ONBOARDING_HAS_NICKNAME_KEY);
       router.replace("/router/homeSetting");
     } catch (error) {
       const shouldReturnToLogin =
