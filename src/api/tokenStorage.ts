@@ -150,6 +150,30 @@ export async function saveAuthTokensIfRefreshTokenMatches(
 }
 
 /**
+ * 현재 refresh token이 expectedRefreshToken과 같을 때만 로컬 인증 토큰을 삭제합니다.
+ * 토큰 비교와 삭제를 같은 직렬화 작업 안에서 실행해 새 세션 토큰 삭제를 막습니다.
+ */
+export async function clearAuthTokensIfRefreshTokenMatches(
+  expectedRefreshToken: string,
+) {
+  return serializeTokenOperation(async () => {
+    const currentTokens = await readAuthTokens();
+
+    if (currentTokens?.refreshToken !== expectedRefreshToken) {
+      return false;
+    }
+
+    await SecureStore.setItemAsync(
+      AUTH_TOKENS_KEY,
+      CLEARED_AUTH_TOKENS_VALUE,
+    );
+    await cleanupLegacyAuthTokens();
+
+    return true;
+  });
+}
+
+/**
  * 로그아웃하거나 세션이 유효하지 않을 때 로컬에 저장된 인증 토큰을 삭제합니다.
  */
 export async function clearAuthTokens() {

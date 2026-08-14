@@ -1,5 +1,5 @@
 import {
-  clearAuthTokens,
+  clearAuthTokensIfRefreshTokenMatches,
   getAccessToken,
   getRefreshToken,
 } from "./tokenStorage";
@@ -54,7 +54,7 @@ async function request<T>(
       const refreshTokenBeforeReissue = await getRefreshToken();
 
       try {
-        tokens = await reissueTokens();
+        tokens = await reissueTokens(refreshTokenBeforeReissue);
       } catch (reissueError) {
         if (
           reissueError instanceof ApiError &&
@@ -63,13 +63,8 @@ async function request<T>(
           throw reissueError;
         }
 
-        const currentRefreshToken = await getRefreshToken();
-
-        if (
-          refreshTokenBeforeReissue &&
-          currentRefreshToken === refreshTokenBeforeReissue
-        ) {
-          await clearAuthTokens();
+        if (refreshTokenBeforeReissue) {
+          await clearAuthTokensIfRefreshTokenMatches(refreshTokenBeforeReissue);
         }
 
         throw reissueError;
