@@ -81,7 +81,7 @@ export default function CoolingScreen() {
     >
       <SafeAreaView className="flex-1 items-center">
         <View className="mt-14">
-          <Text className="font-maru text-2xl font-bold text-primary">
+          <Text className="font-maru text-2xl text-primary">
             {currentCycle}회
           </Text>
         </View>
@@ -100,12 +100,12 @@ export default function CoolingScreen() {
         </View>
 
         <View className="mt-11">
-          <Text className="font-maru text-[52px] font-bold text-primary">
+          <Text className="font-maru text-[52px] text-primary">
             {formattedTime}
           </Text>
         </View>
 
-        <Text className="mt-8 font-maru text-base font-bold text-gray-300">
+        <Text className="mt-8 font-maru text-base text-gray-300">
           얼음을 다시 냉장고에 넣는중...
         </Text>
 
