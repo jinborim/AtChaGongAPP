@@ -363,8 +363,17 @@ export default function StudyScreen() {
           {!isRunning && (
             <Animated.View
               accessible
+              accessibilityRole="button"
               accessibilityLabel="타이머 설정"
               accessibilityHint="왼쪽으로 밀어 설정 화면을 엽니다"
+              accessibilityActions={[
+                { name: "activate", label: "타이머 설정 열기" },
+              ]}
+              onAccessibilityAction={(event) => {
+                if (event.nativeEvent.actionName === "activate") {
+                  router.push("/router/TimerSetting");
+                }
+              }}
               className="absolute h-[110px] w-[220px]"
               style={{
                 right: -138,
