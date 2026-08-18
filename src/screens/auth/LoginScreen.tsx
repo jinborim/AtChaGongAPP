@@ -38,6 +38,11 @@ export default function LoginScreen() {
         throw error;
       }
 
+      if (me.userRole === "ADMIN") {
+        router.replace("/admin.1");
+        return;
+      }
+
       const serverNickname = me.nickname?.trim() ?? "";
       const hasNickname = hasUsableNickname(serverNickname);
 
