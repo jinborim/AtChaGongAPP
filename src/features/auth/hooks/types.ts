@@ -5,7 +5,7 @@ import type {
 
 export type UseSocialProviderLoginOptions = {
   /** 백엔드 로그인까지 성공했을 때 호출됩니다. 화면 분기는 호출부에서 처리합니다. */
-  onLoginSuccess: (result: SocialLoginResult) => void;
+  onLoginSuccess: (result: SocialLoginResult) => void | Promise<void>;
   /** provider 로그인 또는 백엔드 로그인 중 실패했을 때 호출됩니다. */
   onLoginError?: (error: unknown) => void;
 };

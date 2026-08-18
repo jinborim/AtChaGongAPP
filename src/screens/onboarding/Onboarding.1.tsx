@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { completeOnboardingWithAlert } from "./onboardingCompletion";
 
 const BACKGROUND = require("../../assets/images/Background.png");
 const ICE_CUP = require("../../assets/images/IceCup1.png");
@@ -30,7 +31,9 @@ export default function Onboarding1() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="온보딩 건너뛰기"
-            onPress={() => router.replace("/router/homeSetting")}
+            onPress={() => {
+              void completeOnboardingWithAlert();
+            }}
             className="absolute right-4 top-2 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
           >

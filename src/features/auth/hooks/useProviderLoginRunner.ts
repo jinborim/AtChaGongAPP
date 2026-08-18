@@ -30,7 +30,7 @@ export function useProviderLoginRunner({
 
       try {
         const result = await operation();
-        onLoginSuccess(result);
+        await onLoginSuccess(result);
       } catch (error) {
         onLoginError?.(error);
       } finally {

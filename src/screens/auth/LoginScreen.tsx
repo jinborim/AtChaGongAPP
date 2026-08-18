@@ -1,5 +1,5 @@
+import { clearAuthTokensForRecovery } from "@/src/api";
 import { useSocialProviderLogin } from "@/src/features/auth/hooks";
-import type { SocialLoginResult } from "@/src/features/auth/services";
 import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
 import { getMe } from "@/src/features/user";
@@ -14,6 +14,10 @@ import {
   Text,
   View,
 } from "react-native";
+import {
+  cacheOnboardingNickname,
+  hasUsableNickname,
+} from "../onboarding/onboardingCompletion";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -21,25 +25,44 @@ export default function LoginScreen() {
     string | null
   >(null);
 
- const handleLoginSuccess = useCallback(
-  async ({ isOnboardingCompleted }: SocialLoginResult) => {
-    setWebLoginErrorMessage(null);
+  const handleLoginSuccess = useCallback(
+    async () => {
+      setWebLoginErrorMessage(null);
 
-    const me = await getMe();
+      let me;
 
-    if (me.userRole === "ADMIN") {
-      router.replace("/admin.1");
-      return;
-    }
+      try {
+        me = await getMe();
+      } catch (error) {
+        await clearAuthTokensForRecovery();
+        throw error;
+      }
 
-    router.replace(
-      isOnboardingCompleted
-        ? "/router/homeSetting"
-        : "/onboarding.1",
-    );
-  },
-  [router],
-);
+      if (me.userRole === "ADMIN") {
+        router.replace("/admin.1");
+        return;
+      }
+
+      const serverNickname = me.nickname?.trim() ?? "";
+      const hasNickname = hasUsableNickname(serverNickname);
+
+      if (hasNickname) {
+        await cacheOnboardingNickname(serverNickname);
+      } else {
+        await cacheOnboardingNickname("");
+      }
+
+      if (me.onboardingCompleted) {
+        router.replace(
+          hasNickname ? "/router/homeSetting" : "/onboardingnickname",
+        );
+        return;
+      }
+
+      router.replace("/onboarding.1");
+    },
+    [router],
+  );
 
   const handleLoginError = useCallback((error: unknown) => {
     if (isUserCanceledSocialLogin(error)) {
