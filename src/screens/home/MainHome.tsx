@@ -12,10 +12,12 @@ import {
 import { getMe } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Image,
   ImageBackground,
+  PanResponder,
   Text,
   TouchableOpacity,
   View,
@@ -58,6 +60,45 @@ export default function StudyScreen() {
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
   const isRunningRef = useRef(isRunning);
   const timerStartedAtRef = useRef<string | null>(null);
+  const settingsHandleTranslateX = useRef(new Animated.Value(0)).current;
+  const settingsHandlePanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          gestureState.dx < -4 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+        onPanResponderMove: (_, gestureState) => {
+          settingsHandleTranslateX.setValue(
+            Math.max(-48, Math.min(0, gestureState.dx)),
+          );
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx <= -24 || gestureState.vx <= -0.5) {
+            Animated.timing(settingsHandleTranslateX, {
+              toValue: -48,
+              duration: 120,
+              useNativeDriver: true,
+            }).start(() => {
+              settingsHandleTranslateX.setValue(0);
+              router.push("/router/TimerSetting");
+            });
+            return;
+          }
+
+          Animated.spring(settingsHandleTranslateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(settingsHandleTranslateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        },
+      }),
+    [router, settingsHandleTranslateX],
+  );
 
   useEffect(() => {
     isRunningRef.current = isRunning;
@@ -314,16 +355,30 @@ export default function StudyScreen() {
           )}
         </View>
 
-        <View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            disabled={isRunning}
-            onPress={() => router.push("/router/TimerSetting")}
-          >
-            <Text className="font-maru mt-10 text-[52px] text-primary">
-              {formattedTime}
-            </Text>
-          </TouchableOpacity>
+        <View className="mt-10 w-full items-center justify-center">
+          <Text className="font-maru text-[52px] text-primary">
+            {formattedTime}
+          </Text>
+
+          {!isRunning && (
+            <Animated.View
+              accessible
+              accessibilityLabel="타이머 설정"
+              accessibilityHint="왼쪽으로 밀어 설정 화면을 엽니다"
+              className="absolute h-[110px] w-[220px]"
+              style={{
+                right: -138,
+                transform: [{ translateX: settingsHandleTranslateX }],
+              }}
+              {...settingsHandlePanResponder.panHandlers}
+            >
+              <Image
+                source={require("../../assets/images/Panel.png")}
+                className="h-full w-full"
+                resizeMode="contain"
+              />
+            </Animated.View>
+          )}
         </View>
 
         <TimerSessionContent phase={timerPhase} />
