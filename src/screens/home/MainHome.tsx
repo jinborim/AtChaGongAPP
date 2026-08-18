@@ -78,7 +78,9 @@ export default function StudyScreen() {
               toValue: -48,
               duration: 120,
               useNativeDriver: true,
-            }).start(() => {
+            }).start(({ finished }) => {
+              if (!finished) return;
+
               settingsHandleTranslateX.setValue(0);
               router.push("/router/TimerSetting");
             });
@@ -365,7 +367,7 @@ export default function StudyScreen() {
               accessible
               accessibilityRole="button"
               accessibilityLabel="타이머 설정"
-              accessibilityHint="왼쪽으로 밀어 설정 화면을 엽니다"
+              accessibilityHint="두 번 탭하여 타이머 설정을 엽니다"
               accessibilityActions={[
                 { name: "activate", label: "타이머 설정 열기" },
               ]}
