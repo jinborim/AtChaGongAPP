@@ -19,10 +19,8 @@ export type {
 } from "./services";
 export {
   assertConfigured,
-  exchangeKakaoAuthCode,
   getAuthRedirectUri,
   GOOGLE_CLIENT_IDS,
   isUserCanceledSocialLogin,
-  KAKAO_REST_API_KEY,
   SocialProviderError,
 } from "./socialProvider";
