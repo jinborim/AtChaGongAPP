@@ -185,3 +185,15 @@ export async function clearAuthTokens() {
     await cleanupLegacyAuthTokens();
   });
 }
+
+/**
+ * 인증 만료 복구 흐름에서 로컬 토큰 삭제를 시도합니다.
+ * 삭제 실패가 사용자 안내나 로그인 화면 이동을 막지 않도록 오류를 기록하고 삼킵니다.
+ */
+export async function clearAuthTokensForRecovery() {
+  try {
+    await clearAuthTokens();
+  } catch (error) {
+    console.warn("Failed to clear auth tokens during recovery.", error);
+  }
+}

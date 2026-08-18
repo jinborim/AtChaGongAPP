@@ -1,10 +1,12 @@
-import { ApiError, clearAuthTokens } from "@/src/api";
+import { ApiError, clearAuthTokensForRecovery } from "@/src/api";
 import { completeOnboarding } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Alert } from "react-native";
 
 export const NICKNAME_STORAGE_KEY = "nickname";
+
+let onboardingCompletionPromise: Promise<void> | null = null;
 
 export function hasUsableNickname(nickname: string | null | undefined) {
   return (nickname ?? "").trim().length > 0;
@@ -59,7 +61,7 @@ export async function completeOnboardingAndRoute() {
   );
 }
 
-export async function completeOnboardingWithAlert() {
+async function runCompleteOnboardingWithAlert() {
   try {
     await completeOnboardingAndRoute();
   } catch (error) {
@@ -68,7 +70,7 @@ export async function completeOnboardingWithAlert() {
       (error.status === 401 || error.status === 404);
 
     if (shouldReturnToLogin) {
-      await clearAuthTokens();
+      await clearAuthTokensForRecovery();
     }
 
     Alert.alert("처리에 실패했어요", getOnboardingErrorMessage(error), [
@@ -82,4 +84,16 @@ export async function completeOnboardingWithAlert() {
       },
     ]);
   }
+}
+
+export function completeOnboardingWithAlert() {
+  if (onboardingCompletionPromise) {
+    return onboardingCompletionPromise;
+  }
+
+  onboardingCompletionPromise = runCompleteOnboardingWithAlert().finally(() => {
+    onboardingCompletionPromise = null;
+  });
+
+  return onboardingCompletionPromise;
 }

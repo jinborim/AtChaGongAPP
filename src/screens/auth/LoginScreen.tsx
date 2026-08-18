@@ -1,4 +1,4 @@
-import { clearAuthTokens } from "@/src/api";
+import { clearAuthTokensForRecovery } from "@/src/api";
 import { useSocialProviderLogin } from "@/src/features/auth/hooks";
 import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
@@ -34,7 +34,7 @@ export default function LoginScreen() {
       try {
         me = await getMe();
       } catch (error) {
-        await clearAuthTokens();
+        await clearAuthTokensForRecovery();
         throw error;
       }
 

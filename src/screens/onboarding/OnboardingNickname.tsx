@@ -1,4 +1,4 @@
-import { ApiError, clearAuthTokens } from "@/src/api";
+import { ApiError, clearAuthTokensForRecovery } from "@/src/api";
 import { updateNickname } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -76,7 +76,7 @@ export default function OnboardingNickname() {
         (error.status === 401 || error.status === 404);
 
       if (shouldReturnToLogin) {
-        await clearAuthTokens();
+        await clearAuthTokensForRecovery();
       }
 
       Alert.alert("저장에 실패했어요", getNicknameErrorMessage(error), [
