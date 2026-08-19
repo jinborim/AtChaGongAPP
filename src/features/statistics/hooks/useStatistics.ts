@@ -49,7 +49,7 @@ export function useMonthStatistics() {
           : new Error("월별 통계를 가져오는 중 오류가 발생했습니다."),
       );
     } finally {
-      if (requestId !== latestMonthRequestId.current) {
+      if (requestId === latestMonthRequestId.current) {
         setIsLoadingMonth(false);
       }
     }

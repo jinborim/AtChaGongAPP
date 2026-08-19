@@ -46,7 +46,6 @@ export async function fetchMonthStatisticsService(
   month: number,
 ): Promise<FormattedMonthStatistics> {
   const data = await getMonthStatistics(year, month);
-
   return {
     ...data,
     totalFocusedTimeFormatted: formatSecondsToHMS(data.totalFocusedSeconds),
