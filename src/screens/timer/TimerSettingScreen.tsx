@@ -239,7 +239,7 @@ export default function TimerSettingScreen() {
           />
         </ScrollView>
 
-        <View className="absolute bottom-10 w-[80%] self-center">
+        <View className="absolute bottom-14 w-[80%] self-center">
           <TouchableOpacity
             className={`h-12 w-full items-center justify-center rounded-[8px] bg-primary ${
               isLoading || isSaving ? "opacity-60" : ""
