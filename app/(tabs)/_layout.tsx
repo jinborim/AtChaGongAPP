@@ -7,7 +7,7 @@ export default function TabLayout() {
       tabBar={() => null}
       screenOptions={{
         headerShown: false,
-        animation: "none",
+        animation: "fade",
         lazy: false,
       }}
     >
