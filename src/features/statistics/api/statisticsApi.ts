@@ -5,9 +5,9 @@ import { DailyRecordData, MonthStatisticsData } from "./types";
  * 1. 월별 통계 정보 조회 API
  */
 export function getMonthStatistics(year: number, month: number) {
-  return apiClient.request<MonthStatisticsData>("/statistics/calendar", {
-    query: { year, month },
-  });
+  return apiClient.request<MonthStatisticsData>(
+    `/statistics/calendar/${year}/${month}`,
+  );
 }
 
 /**
