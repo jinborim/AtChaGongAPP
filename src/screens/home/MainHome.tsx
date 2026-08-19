@@ -51,11 +51,11 @@ const DEFAULT_NICKNAME = "사용자";
 
 export default function StudyScreen() {
   const router = useRouter();
-  const initialSession = useRef(getActiveTimerSession()).current;
+  const [initialSession] = useState(() => getActiveTimerSession());
   const [focusMinutes, setFocusMinutes] = useState(
     initialSession?.focusMinutes ?? DEFAULT_FOCUS_MINUTES,
   );
-  const [remainingMilliseconds, setRemainingMilliseconds] = useState(
+  const [remainingMilliseconds, setRemainingMilliseconds] = useState(() =>
     initialSession
       ? Math.max(0, initialSession.endTime - Date.now())
       : getFocusDurationMilliseconds(DEFAULT_FOCUS_MINUTES),
