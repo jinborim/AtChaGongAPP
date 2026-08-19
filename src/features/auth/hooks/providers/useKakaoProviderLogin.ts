@@ -1,98 +1,87 @@
-import * as AuthSession from "expo-auth-session";
-import { useCallback, useMemo } from "react";
+import { login } from "@react-native-seoul/kakao-login";
+import { useCallback } from "react";
+import { Platform } from "react-native";
 
 import { loginWithSocialCredential } from "../../services";
-import {
-  assertConfigured,
-  exchangeKakaoAuthCode,
-  getAuthRedirectUri,
-  KAKAO_REST_API_KEY,
-  SocialProviderError,
-} from "../../socialProvider";
+import { SocialProviderError } from "../../socialProvider";
 import type { RunProviderLogin } from "../types";
 
-const KAKAO_DISCOVERY = {
-  authorizationEndpoint: "https://kauth.kakao.com/oauth/authorize",
-};
-
 /**
- * Kakao OAuth authorization code를 얻고 Kakao access token으로 교환한 뒤 백엔드 로그인을 실행합니다.
+ * Kakao native SDK에서 Kakao access token을 얻은 뒤 백엔드 로그인을 실행합니다.
  *
  * @param runLogin provider 작업을 공통 loading/error 처리 안에서 실행하는 runner입니다.
- * @returns Kakao AuthSession request와 로그인 시작 함수입니다.
- * @throws {SocialProviderError} REST API key 누락, 사용자 취소, authorization code 누락, token 교환 실패 시 발생합니다.
+ * @returns Kakao 로그인 준비 여부와 로그인 시작 함수입니다.
+ * @throws {SocialProviderError} 웹 환경 실행, 사용자 취소, native SDK 로그인 실패 시 발생합니다.
  */
 export function useKakaoProviderLogin(runLogin: RunProviderLogin) {
-  const redirectUri = useMemo(() => getAuthRedirectUri("kakao"), []);
-  const canPrepareKakaoRequest = Boolean(KAKAO_REST_API_KEY);
-
-  const [request, , promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: KAKAO_REST_API_KEY,
-      redirectUri,
-      responseType: AuthSession.ResponseType.Code,
-    },
-    canPrepareKakaoRequest ? KAKAO_DISCOVERY : null,
-  );
-
   const signIn = useCallback(async () => {
     await runLogin("KAKAO", async () => {
-      assertConfigured(
-        KAKAO_REST_API_KEY,
-        "KAKAO_REST_API_KEY_MISSING",
-        "Kakao REST API key가 설정되지 않았습니다.",
-      );
-
-      if (!request) {
+      if (Platform.OS === "web") {
         throw new SocialProviderError(
-          "KAKAO_AUTH_REQUEST_NOT_READY",
-          "Kakao 로그인 요청을 준비 중입니다.",
+          "KAKAO_NATIVE_LOGIN_UNSUPPORTED",
+          "Kakao 로그인은 앱에서만 사용할 수 있습니다.",
         );
       }
 
-      const response = await promptAsync();
+      let accessToken: string;
 
-      if (response.type === "cancel" || response.type === "dismiss") {
-        throw new SocialProviderError(
-          "SOCIAL_LOGIN_CANCELED",
-          "Kakao 로그인이 취소되었습니다.",
-        );
-      }
-
-      if (response.type === "error") {
-        const providerErrorMessage = [
-          response.error?.message,
-          response.params.error,
-          response.params.error_description,
-        ]
-          .filter(Boolean)
-          .join(" ");
+      try {
+        const token = await login();
+        accessToken = token.accessToken;
+      } catch (error) {
+        if (isKakaoLoginCanceled(error)) {
+          throw new SocialProviderError(
+            "SOCIAL_LOGIN_CANCELED",
+            "Kakao 로그인이 취소되었습니다.",
+          );
+        }
 
         throw new SocialProviderError(
           "KAKAO_LOGIN_FAILED",
-          providerErrorMessage || "Kakao 로그인에 실패했습니다.",
+          getKakaoLoginErrorMessage(error),
         );
       }
 
-      if (response.type !== "success" || !response.params.code) {
+      if (!accessToken) {
         throw new SocialProviderError(
           "KAKAO_LOGIN_FAILED",
-          "Kakao authorization code를 받지 못했습니다.",
+          "Kakao access token을 받지 못했습니다.",
         );
       }
-
-      const accessToken = await exchangeKakaoAuthCode({
-        code: response.params.code,
-        codeVerifier: request.codeVerifier,
-        redirectUri,
-      });
 
       return loginWithSocialCredential("KAKAO", accessToken);
     });
-  }, [promptAsync, redirectUri, request, runLogin]);
+  }, [runLogin]);
 
   return {
-    request,
+    request: Platform.OS !== "web",
     signIn,
   };
+}
+
+function isKakaoLoginCanceled(error: unknown) {
+  const message = getKakaoLoginErrorMessage(error).toLowerCase();
+
+  return (
+    message.includes("cancel") ||
+    message.includes("cancelled") ||
+    message.includes("canceled")
+  );
+}
+
+function getKakaoLoginErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+
+  return "Kakao 로그인에 실패했습니다.";
 }
