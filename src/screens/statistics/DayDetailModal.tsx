@@ -61,7 +61,7 @@ export default function DayDetailModal({
 
               <View className="flex-col">
                 <Text className="font-maru text-xs text-primary">
-                  총 집중시간: <Text>{focusTime}</Text>
+                  총 집중 시간: <Text>{focusTime}</Text>
                 </Text>
                 <Text className="mt-1 font-maru text-xs text-primary">
                   녹인 얼음 개수: <Text>{meltedIceCount}개</Text>

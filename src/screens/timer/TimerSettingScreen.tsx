@@ -183,7 +183,7 @@ export default function TimerSettingScreen() {
       console.log("타이머 설정 저장 오류:", error);
       Alert.alert(
         "저장 실패",
-        "타이머 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+        "타이머 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       );
     } finally {
       setIsSaving(false);

@@ -48,7 +48,7 @@ export default function MonthStatistics() {
       resizeMode="cover"
       className="flex-1"
     >
-      <Header title="집중기록" />
+      <Header title="집중 기록" />
       <View className="w-full px-7 mt-8">
         {/* 월 이동 */}
         <View className="mb-8 flex-row items-center justify-between">
@@ -123,7 +123,7 @@ export default function MonthStatistics() {
         </View>
         <View className="items-end">
           <Text className="font-maru color-primary text-sm">
-            {month}월 집중시간:
+            {month}월 집중 시간:
             {monthData ? monthData.totalFocusedTimeFormatted : "00:00:00"}
           </Text>
           <Text className="font-maru color-primary text-sm">
@@ -148,7 +148,7 @@ export default function MonthStatistics() {
           {/* 내용 */}
           <View className="flex-1 items-center justify-center pr-14">
             <Text className="font-maru text-lg text-primary">
-              이번달 최대 집중 날
+              이번 달 최대 집중 날
             </Text>
 
             {monthData?.bestDay ? (

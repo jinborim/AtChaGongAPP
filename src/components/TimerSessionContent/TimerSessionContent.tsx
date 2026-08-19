@@ -22,7 +22,7 @@ const SESSION_CONTENT = {
   },
   break: {
     images: [...FOCUS_IMAGES].reverse(),
-    description: "얼음을 다시 냉장고에 넣는중...",
+    description: "얼음을 다시 냉장고에 넣는 중...",
   },
 } as const;
 
