@@ -89,7 +89,7 @@ export default function Onboarding4() {
           </View>
 
           <View
-            className="absolute bottom-[160px] flex-row items-center gap-8"
+            className="absolute bottom-[184px] flex-row items-center gap-8"
             accessibilityLabel="온보딩 4/4"
           >
             <View className="h-5 w-5 rounded-full bg-gray-300" />
@@ -98,7 +98,7 @@ export default function Onboarding4() {
             <View className="h-5 w-[52px] rounded-full bg-secondary" />
           </View>
 
-          <View className="absolute bottom-4 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
+          <View className="absolute bottom-10 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: isCompleting }}
