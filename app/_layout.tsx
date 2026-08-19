@@ -16,6 +16,19 @@ export default function RootLayout() {
       screenOptions={{
         headerShown: false,
       }}
-    />
+    >
+      <Stack.Screen
+        name="router/homeSetting"
+        options={{ animation: "fade", animationDuration: 150 }}
+      />
+      <Stack.Screen
+        name="month"
+        options={{ animation: "fade", animationDuration: 150 }}
+      />
+      <Stack.Screen
+        name="mypage/index"
+        options={{ animation: "fade", animationDuration: 150 }}
+      />
+    </Stack>
   );
 }

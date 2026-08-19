@@ -1,87 +1,74 @@
-import { useEffect } from "react";
-import {
-  Animated,
-  Easing,
-  Image,
-  StyleSheet,
-  Text,
-  useAnimatedValue,
-  View,
-} from "react-native";
+import { Image, Text, View } from "react-native";
 
 export type TimerSessionPhase = "focus" | "break";
 
 type TimerSessionContentProps = {
   phase: TimerSessionPhase;
+  focusProgress: number;
+  breakProgress: number;
 };
+
+const FOCUS_IMAGES = [
+  require("../../assets/images/IceCup1-1.png"),
+  require("../../assets/images/IceCup1-2.png"),
+  require("../../assets/images/IceCup1-3.png"),
+  require("../../assets/images/IceCup1-4.png"),
+  require("../../assets/images/IceCup1-5.png"),
+] as const;
 
 const SESSION_CONTENT = {
   focus: {
-    image: require("../../assets/images/IceCup1.png"),
+    images: FOCUS_IMAGES,
   },
   break: {
-    image: require("../../assets/images/EmptyCup.png"),
+    images: [...FOCUS_IMAGES].reverse(),
     description: "얼음을 다시 냉장고에 넣는중...",
   },
 } as const;
 
 export default function TimerSessionContent({
   phase,
+  focusProgress,
+  breakProgress,
 }: TimerSessionContentProps) {
   const isBreakPhase = phase === "break";
-  const breakOpacity = useAnimatedValue(isBreakPhase ? 1 : 0);
-  const focusOpacity = breakOpacity.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
-  });
-
-  useEffect(() => {
-    Animated.timing(breakOpacity, {
-      toValue: isBreakPhase ? 1 : 0,
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [breakOpacity, isBreakPhase]);
+  const clampedFocusProgress = Math.min(1, Math.max(0, focusProgress));
+  const focusImageIndex = Math.min(
+    SESSION_CONTENT.focus.images.length - 1,
+    Math.floor(clampedFocusProgress * SESSION_CONTENT.focus.images.length),
+  );
+  const clampedBreakProgress = Math.min(1, Math.max(0, breakProgress));
+  const breakImageIndex = Math.min(
+    SESSION_CONTENT.break.images.length - 1,
+    Math.floor(clampedBreakProgress * SESSION_CONTENT.break.images.length),
+  );
+  const displayedImageIndex = isBreakPhase
+    ? FOCUS_IMAGES.length - 1 - breakImageIndex
+    : focusImageIndex;
 
   return (
     <View className="mt-8 h-[324px] w-full items-center">
       <View className="h-6 justify-center">
-        <Animated.View
-          accessibilityElementsHidden={!isBreakPhase}
-          importantForAccessibility={
-            isBreakPhase ? "auto" : "no-hide-descendants"
-          }
-          style={{ opacity: breakOpacity }}
-        >
-          <Text className="font-maru text-base font-bold text-gray-300">
+        {isBreakPhase && (
+          <Text className="font-maru text-base text-gray-300">
             {SESSION_CONTENT.break.description}
           </Text>
-        </Animated.View>
+        )}
       </View>
 
       <View className="h-[300px] w-[220px] items-center justify-center">
-        <Animated.View style={[styles.layer, { opacity: focusOpacity }]}>
+        {FOCUS_IMAGES.map((source, imageIndex) => (
           <Image
-            source={SESSION_CONTENT.focus.image}
-            className="h-[300px] w-[220px]"
+            key={imageIndex}
+            source={source}
+            className="absolute h-[300px] w-[220px]"
+            fadeDuration={0}
             resizeMode="contain"
+            style={{ opacity: imageIndex === displayedImageIndex ? 1 : 0 }}
           />
-        </Animated.View>
-        <Animated.View style={[styles.layer, { opacity: breakOpacity }]}>
-          <Image
-            source={SESSION_CONTENT.break.image}
-            className="h-[300px] w-[220px]"
-            resizeMode="contain"
-          />
-        </Animated.View>
+        ))}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  layer: {
-    position: "absolute",
-  },
-});

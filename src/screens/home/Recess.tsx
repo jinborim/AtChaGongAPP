@@ -111,7 +111,7 @@ export default function CoolingScreen() {
 
         <View className="flex-1 justify-center">
           <Image
-            source={require("../../assets/images/EmptyCup.png")}
+            source={require("../../assets/images/IceCup5.png")}
             className="mt-7 h-[300px] w-[220px]"
             resizeMode="contain"
           />
