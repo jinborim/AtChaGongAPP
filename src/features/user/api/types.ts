@@ -22,3 +22,7 @@ export type UpdateNicknameResponse = {
 export type CompleteOnboardingResponse = {
   completed: boolean;
 };
+
+export type DeleteMeResponse = {
+  message: string;
+};

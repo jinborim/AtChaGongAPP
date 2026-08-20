@@ -49,6 +49,12 @@
       "expo-secure-store",
       "expo-apple-authentication",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.761978560648-0crl7jk5r8jq9u5828525d6j5tdp846n"
+        }
+      ],
+      [
         "@react-native-seoul/kakao-login",
         {
           "kakaoAppKey": "4f6fff7cfa092fbcd26c100a1826c6d1"

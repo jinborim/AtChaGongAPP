@@ -17,7 +17,7 @@ export class SocialProviderError extends Error {
 /**
  * provider 로그인 중 사용자가 명시적으로 취소한 오류인지 확인합니다.
  *
- * @param error provider SDK, AuthSession, 또는 서비스에서 전달된 오류 객체입니다.
+ * @param error provider SDK 또는 서비스에서 전달된 오류 객체입니다.
  * @returns 사용자 취소로 볼 수 있으면 true입니다.
  */
 export function isUserCanceledSocialLogin(error: unknown) {

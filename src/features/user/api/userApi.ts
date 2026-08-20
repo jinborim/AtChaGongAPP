@@ -2,6 +2,7 @@ import { apiClient } from "@/src/api/client";
 
 import type {
   CompleteOnboardingResponse,
+  DeleteMeResponse,
   Me,
   UpdateNicknameRequest,
   UpdateNicknameResponse,
@@ -28,4 +29,10 @@ export function completeOnboarding() {
       },
     },
   );
+}
+
+export function deleteMe() {
+  return apiClient.request<DeleteMeResponse>("/users/me", {
+    method: "DELETE",
+  });
 }
