@@ -69,15 +69,15 @@ export function useGoogleProviderLogin(runLogin: RunProviderLogin) {
         "서버 검증용 Google Web client ID가 설정되지 않았습니다.",
       );
 
-      if (Platform.OS === "android") {
-        await GoogleSignin.hasPlayServices({
-          showPlayServicesUpdateDialog: true,
-        });
-      }
-
       let idToken: string | null;
 
       try {
+        if (Platform.OS === "android") {
+          await GoogleSignin.hasPlayServices({
+            showPlayServicesUpdateDialog: true,
+          });
+        }
+
         const response = await GoogleSignin.signIn();
 
         if (response.type === "cancelled") {
