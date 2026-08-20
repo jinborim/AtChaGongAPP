@@ -1,42 +1,61 @@
-import { Link } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
+import { Animated, Image, ImageBackground, Text, View } from "react-native";
+
+const SPLASH_DURATION = 1800;
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const loadingProgress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.timing(loadingProgress, {
+      toValue: 1,
+      duration: SPLASH_DURATION,
+      useNativeDriver: false,
+    });
+
+    animation.start(({ finished }) => {
+      if (finished) {
+        router.replace("/login");
+      }
+    });
+
+    return () => animation.stop();
+  }, [loadingProgress, router]);
+
+  const loadingWidth = loadingProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Home</Text>
-      <Link href="/router/homeSetting" style={styles.button}>
-        메인으로 이동
-      </Link>
-      <Link href="/month" style={styles.button}>
-        월별 통계로 이동
-      </Link>
-      <Link href="/login" style={styles.button}>
-        로그인으로 이동
-      </Link>
-      <Link href="/onboarding.1" style={styles.button}>
-        온보딩으로 이동
-      </Link>
-       <Link href="/admin.1" style={styles.button}>
-        어드민으로 이동
-      </Link>
-    </View>
+    <ImageBackground
+      source={require("../src/assets/images/Background.png")}
+      resizeMode="cover"
+      className="flex-1"
+    >
+      <View className="flex-1 items-center">
+        <View className="h-[26%]" />
+        <Image
+          source={require("../src/assets/images/Ice.png")}
+          className="h-[200px] w-[200px]"
+          resizeMode="contain"
+        />
+        <Text className="font-maru text-3xl text-primary">앗차공</Text>
+        <Text className="mt-5 font-maru text-sm text-gray-300">
+          얼음을 준비하고 있어요
+        </Text>
+      </View>
+
+      <View className="mb-20 mt-auto w-[280px] self-center">
+        <View className="h-2 overflow-hidden rounded-full bg-white/70">
+          <Animated.View
+            className="h-full rounded-full bg-secondary"
+            style={{ width: loadingWidth }}
+          />
+        </View>
+      </View>
+    </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#25292e",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    color: "#fff",
-  },
-  button: {
-    fontSize: 20,
-    textDecorationLine: "underline",
-    color: "#fff",
-  },
-});
