@@ -120,7 +120,7 @@ export default function Admin1() {
           <Pressable
             accessibilityRole="button"
             onPress={() => router.replace("/login")}
-            className="mb-10 mt-auto h-[52px] flex-row items-center justify-center rounded-[8px] border border-primary bg-primary"
+            className="mb-14 mt-auto h-[52px] flex-row items-center justify-center rounded-[8px] border border-primary bg-primary"
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
             <Text className="font-maru text-[12px] text-white">로그아웃</Text>

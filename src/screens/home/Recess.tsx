@@ -106,12 +106,12 @@ export default function CoolingScreen() {
         </View>
 
         <Text className="mt-8 font-maru text-base text-gray-300">
-          얼음을 다시 냉장고에 넣는중...
+          얼음을 다시 냉장고에 넣는 중...
         </Text>
 
         <View className="flex-1 justify-center">
           <Image
-            source={require("../../assets/images/EmptyCup.png")}
+            source={require("../../assets/images/IceCup5.png")}
             className="mt-7 h-[300px] w-[220px]"
             resizeMode="contain"
           />

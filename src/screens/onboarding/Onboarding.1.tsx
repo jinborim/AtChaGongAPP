@@ -34,7 +34,7 @@ export default function Onboarding1() {
             onPress={() => {
               void completeOnboardingWithAlert();
             }}
-            className="absolute right-4 top-2 z-10 px-3 py-2"
+            className="absolute right-4 top-6 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
           >
            <Text className="border-b border-gray-300 font-maru text-[16px] text-gray-300">
@@ -59,7 +59,7 @@ export default function Onboarding1() {
           </View>
 
           <View
-            className="absolute bottom-[184px] flex-row items-center gap-8"
+            className="absolute bottom-[200px] flex-row items-center gap-8"
             accessibilityLabel="온보딩 1/4"
           >
             <View className="h-5 w-[52px] rounded-full bg-secondary" />
@@ -68,7 +68,7 @@ export default function Onboarding1() {
             <View className="h-5 w-5 rounded-full bg-gray-300" />
           </View>
 
-          <View className="absolute bottom-10 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
+          <View className="absolute bottom-14 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
               onPress={() => router.replace("/onboarding.2")}

@@ -9,6 +9,11 @@ import {
   getTimerSettings,
   updateTimerSettings,
 } from "@/src/features/timer";
+import {
+  clearActiveTimerSession,
+  getActiveTimerSession,
+  setActiveTimerSession,
+} from "@/src/features/timer/activeTimerSession";
 import { getMe } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -46,20 +51,35 @@ const DEFAULT_NICKNAME = "사용자";
 
 export default function StudyScreen() {
   const router = useRouter();
-  const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
-  const [remainingMilliseconds, setRemainingMilliseconds] = useState(
-    getFocusDurationMilliseconds(DEFAULT_FOCUS_MINUTES),
+  const [initialSession] = useState(() => getActiveTimerSession());
+  const [focusMinutes, setFocusMinutes] = useState(
+    initialSession?.focusMinutes ?? DEFAULT_FOCUS_MINUTES,
   );
-  const [timerPhase, setTimerPhase] = useState<TimerSessionPhase>("focus");
-  const [isRunning, setIsRunning] = useState(false);
-  const [endTime, setEndTime] = useState<number | null>(null);
+  const [remainingMilliseconds, setRemainingMilliseconds] = useState(() =>
+    initialSession
+      ? Math.max(0, initialSession.endTime - Date.now())
+      : getFocusDurationMilliseconds(DEFAULT_FOCUS_MINUTES),
+  );
+  const [timerPhase, setTimerPhase] = useState<TimerSessionPhase>(
+    initialSession?.phase ?? "focus",
+  );
+  const [isRunning, setIsRunning] = useState(initialSession !== null);
+  const [endTime, setEndTime] = useState<number | null>(
+    initialSession?.endTime ?? null,
+  );
   const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [cycleCount, setCycleCount] = useState(DEFAULT_CYCLE_COUNT);
-  const [currentCycle, setCurrentCycle] = useState(MIN_CYCLE_COUNT);
+  const [cycleCount, setCycleCount] = useState(
+    initialSession?.cycleCount ?? DEFAULT_CYCLE_COUNT,
+  );
+  const [currentCycle, setCurrentCycle] = useState(
+    initialSession?.currentCycle ?? MIN_CYCLE_COUNT,
+  );
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
   const isRunningRef = useRef(isRunning);
-  const timerStartedAtRef = useRef<string | null>(null);
+  const timerStartedAtRef = useRef<string | null>(
+    initialSession?.startedAt ?? null,
+  );
   const settingsHandleTranslateX = useRef(new Animated.Value(0)).current;
   const settingsHandlePanResponder = useMemo(
     () =>
@@ -220,41 +240,48 @@ export default function StudyScreen() {
     if (!isRunning || endTime === null) return;
 
     const timer = setInterval(() => {
-      const remaining = Math.max(0, endTime - Date.now());
+      const now = Date.now();
+      let nextEndTime = endTime;
+      let nextPhase = timerPhase;
+      let nextCycle = currentCycle;
 
-      if (remaining > 0) {
-        setRemainingMilliseconds(remaining);
-        return;
-      }
+      while (now >= nextEndTime) {
+        if (nextPhase === "focus") {
+          if (nextCycle >= cycleCount) {
+            clearInterval(timer);
+            clearActiveTimerSession();
+            setRemainingMilliseconds(0);
+            setEndTime(null);
+            setIsRunning(false);
+            sendFocusCompletion(cycleCount).catch((error) =>
+              console.log("집중 완료 기록 전송 오류:", error),
+            );
+            setShowCompleteModal(true);
+            return;
+          }
 
-      clearInterval(timer);
-
-      if (timerPhase === "focus") {
-        if (currentCycle < cycleCount) {
-          const breakDuration = getBreakDurationMilliseconds();
-
-          setTimerPhase("break");
-          setRemainingMilliseconds(breakDuration);
-          setEndTime(Date.now() + breakDuration);
-          return;
+          nextPhase = "break";
+          nextEndTime += getBreakDurationMilliseconds();
+          continue;
         }
 
-        setEndTime(null);
-        setIsRunning(false);
-        sendFocusCompletion(cycleCount).catch((error) =>
-          console.log("집중 완료 기록 전송 오류:", error),
-        );
-        setShowCompleteModal(true);
-        return;
+        nextPhase = "focus";
+        nextCycle = Math.min(cycleCount, nextCycle + 1);
+        nextEndTime += getFocusDurationMilliseconds(focusMinutes);
       }
 
-      const nextCycle = Math.min(cycleCount, currentCycle + 1);
-      const focusDuration = getFocusDurationMilliseconds(focusMinutes);
-
-      setTimerPhase("focus");
+      setTimerPhase(nextPhase);
       setCurrentCycle(nextCycle);
-      setRemainingMilliseconds(focusDuration);
-      setEndTime(Date.now() + focusDuration);
+      setEndTime(nextEndTime);
+      setRemainingMilliseconds(nextEndTime - now);
+      setActiveTimerSession({
+        phase: nextPhase,
+        endTime: nextEndTime,
+        currentCycle: nextCycle,
+        cycleCount,
+        focusMinutes,
+        startedAt: timerStartedAtRef.current ?? new Date(now).toISOString(),
+      });
     }, 50);
 
     return () => clearInterval(timer);
@@ -292,7 +319,9 @@ export default function StudyScreen() {
     if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
 
     setTimerPhase("focus");
-    timerStartedAtRef.current = new Date().toISOString();
+    const startedAt = new Date().toISOString();
+    const nextEndTime = Date.now() + remainingMilliseconds;
+    timerStartedAtRef.current = startedAt;
     if (TIMER_QA_MODE) {
       updateTimerSettings({
         beverageId: DEFAULT_BEVERAGE_ID,
@@ -301,7 +330,15 @@ export default function StudyScreen() {
         cycleCount: MAX_CYCLE_COUNT,
       }).catch((error) => console.log("QA 타이머 설정 전송 오류:", error));
     }
-    setEndTime(Date.now() + remainingMilliseconds);
+    setActiveTimerSession({
+      phase: "focus",
+      endTime: nextEndTime,
+      currentCycle,
+      cycleCount,
+      focusMinutes,
+      startedAt,
+    });
+    setEndTime(nextEndTime);
     setIsRunning(true);
   };
 
@@ -312,6 +349,7 @@ export default function StudyScreen() {
     setCurrentCycle(MIN_CYCLE_COUNT);
     setTimerPhase("focus");
     setRemainingMilliseconds(getFocusDurationMilliseconds(minutes));
+    clearActiveTimerSession();
     setShowCompleteModal(false);
   };
 
@@ -392,7 +430,11 @@ export default function StudyScreen() {
           )}
         </View>
 
-        <TimerSessionContent phase={timerPhase} />
+        <TimerSessionContent
+          phase={timerPhase}
+          focusProgress={timerPhase === "focus" ? timerProgress : 0}
+          breakProgress={timerPhase === "break" ? timerProgress : 0}
+        />
 
         <TouchableOpacity
           className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
