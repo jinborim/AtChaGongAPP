@@ -18,18 +18,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./src/assets/images/AndroidForeground.png",
-        "backgroundImage": "./src/assets/images/AndroidBackground.png",
-        "monochromeImage": "./src/assets/images/AndroidMonochrome.png"
+        "backgroundColor": "#E8F3FC",
+        "backgroundImage": "./src/assets/images/Background.png",
+        "foregroundImage": "./src/assets/images/Ice.png"
       },
-      "edgeToEdgeEnabled": true,
+      // "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.atchagong.app"
     },
     "web": {
       "output": "static",
-      "favicon": "./src/assets/images/Favicon.png",
+      "favicon": "./src/assets/images/Ice.png",
       "bundler": "metro"
     },
     "plugins": [
