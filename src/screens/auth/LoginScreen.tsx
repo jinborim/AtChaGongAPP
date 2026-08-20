@@ -84,7 +84,6 @@ export default function LoginScreen() {
 
   const {
     canUseGoogleLogin,
-    googleRequest,
     kakaoRequest,
     loginState,
     signInWithApple,
@@ -96,7 +95,7 @@ export default function LoginScreen() {
     onLoginError: handleLoginError,
   });
 
-  const isGoogleDisabled = loginState.isLoading || !googleRequest;
+  const isGoogleDisabled = loginState.isLoading || !canUseGoogleLogin;
   const isKakaoDisabled = loginState.isLoading || !kakaoRequest;
   const isAppleDisabled = loginState.isLoading;
   const isDevAuthEnabled = __DEV__ && isDevAuthTokenLoginEnabled();

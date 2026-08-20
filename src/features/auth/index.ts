@@ -19,7 +19,6 @@ export type {
 } from "./services";
 export {
   assertConfigured,
-  getAuthRedirectUri,
   GOOGLE_CLIENT_IDS,
   isUserCanceledSocialLogin,
   SocialProviderError,
