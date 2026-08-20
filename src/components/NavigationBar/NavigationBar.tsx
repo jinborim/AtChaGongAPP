@@ -6,12 +6,12 @@ import NavigationButton from "./NavigationButton";
 const NAVIGATION_ITEMS: {
   label: string;
   icon: number;
-  href: "/router/homeSetting" | "/month" | "/mypage";
+  href: "/homeSetting" | "/month" | "/mypage";
 }[] = [
   {
     label: "홈",
     icon: require("../../assets/images/HomeIcon.png"),
-    href: "/router/homeSetting",
+    href: "/homeSetting",
   },
   {
     label: "통계",

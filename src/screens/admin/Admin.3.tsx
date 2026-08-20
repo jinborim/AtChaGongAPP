@@ -47,12 +47,12 @@ export default function Admin3() {
   const [title, setTitle] = useState(params.title ?? "");
   const [content, setContent] = useState(params.content ?? "");
   const [isImmediate, setIsImmediate] = useState(
-    formatDate(editingStartDate) === formatDate(today)
+    formatDate(editingStartDate) === formatDate(today),
   );
   const [startDate, setStartDate] = useState(editingStartDate);
   const [endDate, setEndDate] = useState(editingEndDate);
   const [pickerTarget, setPickerTarget] = useState<"start" | "end" | null>(
-    null
+    null,
   );
   const [draftDate, setDraftDate] = useState(new Date());
   const [showPreview, setShowPreview] = useState(false);
@@ -80,9 +80,9 @@ export default function Admin3() {
       .then((notice) => {
         if (!isActive) return;
 
-        const loadedStartDate =
-          parseDate(notice.publishStartsAt) ?? currentDay;
-        const loadedEndDate = parseDate(notice.publishEndsAt) ?? loadedStartDate;
+        const loadedStartDate = parseDate(notice.publishStartsAt) ?? currentDay;
+        const loadedEndDate =
+          parseDate(notice.publishEndsAt) ?? loadedStartDate;
 
         setTitle(notice.title);
         setContent(notice.content);
@@ -90,9 +90,7 @@ export default function Admin3() {
         setNoticeStatus(notice.status);
         setStartDate(loadedStartDate);
         setEndDate(loadedEndDate);
-        setIsImmediate(
-          formatDate(loadedStartDate) === formatDate(currentDay),
-        );
+        setIsImmediate(formatDate(loadedStartDate) === formatDate(currentDay));
       })
       .catch((error: unknown) => {
         if (!isActive) return;
@@ -126,13 +124,13 @@ export default function Admin3() {
     setIsImmediate(true);
     setStartDate(currentDate);
     setEndDate((currentEndDate) =>
-      currentEndDate < currentDate ? currentDate : currentEndDate
+      currentEndDate < currentDate ? currentDate : currentEndDate,
     );
   };
 
   const handleDateChange = (
     event: DateTimePickerEvent,
-    selectedDate?: Date
+    selectedDate?: Date,
   ) => {
     if (event.type === "dismissed" || !selectedDate) {
       setPickerTarget(null);
@@ -149,7 +147,6 @@ export default function Admin3() {
   };
 
   const applySelectedDate = (selectedDate: Date) => {
-
     if (pickerTarget === "start") {
       setStartDate(selectedDate);
 
@@ -170,12 +167,7 @@ export default function Admin3() {
   };
 
   const submitNotice = async () => {
-    if (
-      !title.trim() ||
-      !content.trim() ||
-      isSubmitting ||
-      isLoadingNotice
-    )
+    if (!title.trim() || !content.trim() || isSubmitting || isLoadingNotice)
       return;
 
     setIsSubmitting(true);
@@ -201,12 +193,12 @@ export default function Admin3() {
       } else {
         await createAdminNotice(noticeValues);
       }
-      router.replace("/admin.2" as never);
+      router.replace("/admin.2");
     } catch (error) {
       console.error("관리자 공지 저장 실패:", error);
       Alert.alert(
         "공지 저장에 실패했어요",
-        "공지를 저장하거나 목록 화면으로 이동하지 못했습니다. 다시 시도해 주세요."
+        "공지를 저장하거나 목록 화면으로 이동하지 못했습니다. 다시 시도해 주세요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -268,93 +260,93 @@ export default function Admin3() {
               <ActivityIndicator color={PRIMARY_COLOR} />
             </View>
           ) : (
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName="px-7 pb-10 pt-8"
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text className="font-maru text-[12px] text-primary">제목</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              maxLength={100}
-              placeholder="공지 제목을 입력하세요"
-              placeholderTextColor={PLACEHOLDER_COLOR}
-              className="mt-3 h-12 rounded-[8px] border border-gray-100 bg-white px-4 font-maru text-[12px] text-primary"
-            />
-
-            <Text className="mt-7 font-maru text-[12px] text-primary">
-              내용
-            </Text>
-            <TextInput
-              value={content}
-              onChangeText={setContent}
-              placeholder="공지 내용을 입력하세요"
-              placeholderTextColor={PLACEHOLDER_COLOR}
-              multiline
-              textAlignVertical="top"
-              className="mt-3 h-[180px] rounded-[8px] border border-gray-100 bg-white p-4 font-maru text-[12px] leading-5 text-primary"
-            />
-
-            <Text className="mt-8 font-maru text-[12px] text-primary">
-              게시 기간
-            </Text>
-            <View className="mt-3 rounded-[8px] border border-gray-100 bg-white px-5 py-4">
-              <View className="flex-row items-center gap-8">
-                <PeriodOption
-                  label="즉시 게시"
-                  selected={isImmediate}
-                  onPress={selectImmediatePosting}
-                />
-                <PeriodOption
-                  label="기간 설정"
-                  selected={!isImmediate}
-                  onPress={() => setIsImmediate(false)}
-                />
-              </View>
-
-              <View className="mt-4 flex-row items-center justify-between">
-                <DateField
-                  label="시작일"
-                  date={formatDate(startDate)}
-                  onPress={() => openDatePicker("start")}
-                  disabled={isImmediate}
-                />
-                <Text className="font-maru text-[16px] text-primary">↔</Text>
-                <DateField
-                  label="종료일"
-                  date={formatDate(endDate)}
-                  onPress={() => openDatePicker("end")}
-                />
-              </View>
-            </View>
-
-            {pickerTarget && Platform.OS !== "ios" && (
-              <DateTimePicker
-                value={pickerTarget === "start" ? startDate : endDate}
-                mode="date"
-                display="default"
-                minimumDate={pickerTarget === "end" ? startDate : today}
-                onChange={handleDateChange}
+            <ScrollView
+              className="flex-1"
+              contentContainerClassName="px-7 pb-10 pt-8"
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text className="font-maru text-[12px] text-primary">제목</Text>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                maxLength={100}
+                placeholder="공지 제목을 입력하세요"
+                placeholderTextColor={PLACEHOLDER_COLOR}
+                className="mt-3 h-12 rounded-[8px] border border-gray-100 bg-white px-4 font-maru text-[12px] text-primary"
               />
-            )}
 
-            <View className="mt-7 flex-row items-center justify-between">
-              <Text className="font-maru text-[12px] text-primary">
-                미리보기
+              <Text className="mt-7 font-maru text-[12px] text-primary">
+                내용
               </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setShowPreview(true)}
-                className="rounded-full bg-secondary px-5 py-2"
-                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-              >
-                <Text className="font-maru text-[12px] text-white">
+              <TextInput
+                value={content}
+                onChangeText={setContent}
+                placeholder="공지 내용을 입력하세요"
+                placeholderTextColor={PLACEHOLDER_COLOR}
+                multiline
+                textAlignVertical="top"
+                className="mt-3 h-[180px] rounded-[8px] border border-gray-100 bg-white p-4 font-maru text-[12px] leading-5 text-primary"
+              />
+
+              <Text className="mt-8 font-maru text-[12px] text-primary">
+                게시 기간
+              </Text>
+              <View className="mt-3 rounded-[8px] border border-gray-100 bg-white px-5 py-4">
+                <View className="flex-row items-center gap-8">
+                  <PeriodOption
+                    label="즉시 게시"
+                    selected={isImmediate}
+                    onPress={selectImmediatePosting}
+                  />
+                  <PeriodOption
+                    label="기간 설정"
+                    selected={!isImmediate}
+                    onPress={() => setIsImmediate(false)}
+                  />
+                </View>
+
+                <View className="mt-4 flex-row items-center justify-between">
+                  <DateField
+                    label="시작일"
+                    date={formatDate(startDate)}
+                    onPress={() => openDatePicker("start")}
+                    disabled={isImmediate}
+                  />
+                  <Text className="font-maru text-[16px] text-primary">↔</Text>
+                  <DateField
+                    label="종료일"
+                    date={formatDate(endDate)}
+                    onPress={() => openDatePicker("end")}
+                  />
+                </View>
+              </View>
+
+              {pickerTarget && Platform.OS !== "ios" && (
+                <DateTimePicker
+                  value={pickerTarget === "start" ? startDate : endDate}
+                  mode="date"
+                  display="default"
+                  minimumDate={pickerTarget === "end" ? startDate : today}
+                  onChange={handleDateChange}
+                />
+              )}
+
+              <View className="mt-7 flex-row items-center justify-between">
+                <Text className="font-maru text-[12px] text-primary">
                   미리보기
                 </Text>
-              </Pressable>
-            </View>
-          </ScrollView>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setShowPreview(true)}
+                  className="rounded-full bg-secondary px-5 py-2"
+                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                >
+                  <Text className="font-maru text-[12px] text-white">
+                    미리보기
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           )}
 
           <Modal
@@ -448,12 +440,7 @@ type DateFieldProps = {
   disabled?: boolean;
 };
 
-function DateField({
-  label,
-  date,
-  onPress,
-  disabled = false,
-}: DateFieldProps) {
+function DateField({ label, date, onPress, disabled = false }: DateFieldProps) {
   return (
     <Pressable
       accessibilityRole="button"

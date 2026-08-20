@@ -69,7 +69,7 @@ export default function OnboardingNickname() {
         setSavedNickname(response.nickname);
       }
 
-      router.replace("/router/homeSetting");
+      router.replace("/homeSetting");
     } catch (error) {
       const shouldReturnToLogin =
         error instanceof ApiError &&

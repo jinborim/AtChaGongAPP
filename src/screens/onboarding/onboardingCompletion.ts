@@ -57,7 +57,7 @@ export async function completeOnboardingAndRoute() {
   const nickname = await AsyncStorage.getItem(NICKNAME_STORAGE_KEY);
 
   router.replace(
-    hasUsableNickname(nickname) ? "/router/homeSetting" : "/onboardingnickname",
+    hasUsableNickname(nickname) ? "/homeSetting" : "/onboardingnickname",
   );
 }
 
