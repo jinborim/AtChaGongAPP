@@ -1,6 +1,6 @@
 import CustomModal from "@/src/components/Modal/CustomModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
-import { clearAuthTokens } from "@/src/api";
+import { clearAuthTokensForRecovery } from "@/src/api";
 import { logoutCurrentUser } from "@/src/features/auth/services";
 import { deleteMe, getMe, updateNickname } from "@/src/features/user";
 import { useRouter } from "expo-router";
@@ -106,7 +106,7 @@ export default function Mypage() {
 
     try {
       await deleteMe();
-      await clearAuthTokens();
+      await clearAuthTokensForRecovery();
       setIsDeleteAccountModalOpen(false);
       router.replace("/login");
     } catch (error) {
