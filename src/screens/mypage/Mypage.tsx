@@ -1,11 +1,13 @@
 import CustomModal from "@/src/components/Modal/CustomModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
+import { clearAuthTokens } from "@/src/api";
 import { logoutCurrentUser } from "@/src/features/auth/services";
-import { getMe, updateNickname } from "@/src/features/user";
+import { deleteMe, getMe, updateNickname } from "@/src/features/user";
 import { useRouter } from "expo-router";
 import { Check, ChevronRight, Pencil } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   ImageBackground,
   Pressable,
@@ -26,6 +28,7 @@ export default function Mypage() {
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] =
     useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const router = useRouter();
   useEffect(() => {
     let isActive = true;
@@ -94,9 +97,28 @@ export default function Mypage() {
       router.replace("/login");
     }
   };
-  const handleDeleteAccount = () => {
-    setIsDeleteAccountModalOpen(false);
-    //여기에 실제 회원탈퇴 함수
+  const handleDeleteAccount = async () => {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteMe();
+      await clearAuthTokens();
+      setIsDeleteAccountModalOpen(false);
+      router.replace("/login");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "회원 탈퇴 요청에 실패했습니다.";
+
+      Alert.alert("회원탈퇴 실패", message);
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   const handlePressPrivacyPolicy = () => {
@@ -260,7 +282,7 @@ export default function Mypage() {
         title="회원탈퇴"
         description="정말...회원 탈퇴하시겠습니다? 정말요..?"
         buttonCount={2}
-        confirmText="회원탈퇴"
+        confirmText={isDeletingAccount ? "탈퇴 중" : "회원탈퇴"}
         cancelText="취소"
       />
       <NavigationBar />
