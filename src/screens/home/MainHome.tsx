@@ -469,7 +469,7 @@ export default function StudyScreen() {
           />
           <Image
             source={require("../../assets/images/ResetButton.png")}
-            className="absolute h-[72px] w-[100px]"
+            className="absolute h-[68px] w-[91px]"
             resizeMode="contain"
             style={{ opacity: canResetTimer ? 1 : 0 }}
           />
