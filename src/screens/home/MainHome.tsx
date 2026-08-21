@@ -309,6 +309,8 @@ export default function StudyScreen() {
       : breakDurationMilliseconds === 0
         ? 0
         : 1 - remainingMilliseconds / breakDurationMilliseconds;
+  const canResetTimer =
+    isRunning && (timerPhase === "focus" || timerPhase === "break");
 
   const startTimer = async () => {
     if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
@@ -441,7 +443,7 @@ export default function StudyScreen() {
           breakProgress={timerPhase === "break" ? timerProgress : 0}
         />
 
-        {isRunning ? (
+        {canResetTimer ? (
           <TouchableOpacity
             accessible
             accessibilityRole="button"
