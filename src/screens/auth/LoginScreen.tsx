@@ -25,44 +25,39 @@ export default function LoginScreen() {
     string | null
   >(null);
 
-  const handleLoginSuccess = useCallback(
-    async () => {
-      setWebLoginErrorMessage(null);
+  const handleLoginSuccess = useCallback(async () => {
+    setWebLoginErrorMessage(null);
 
-      let me;
+    let me;
 
-      try {
-        me = await getMe();
-      } catch (error) {
-        await clearAuthTokensForRecovery();
-        throw error;
-      }
+    try {
+      me = await getMe();
+    } catch (error) {
+      await clearAuthTokensForRecovery();
+      throw error;
+    }
 
-      if (me.userRole === "ADMIN") {
-        router.replace("/admin.1");
-        return;
-      }
+    if (me.userRole === "ADMIN") {
+      router.replace("/admin.1");
+      return;
+    }
 
-      const serverNickname = me.nickname?.trim() ?? "";
-      const hasNickname = hasUsableNickname(serverNickname);
+    const serverNickname = me.nickname?.trim() ?? "";
+    const hasNickname = hasUsableNickname(serverNickname);
 
-      if (hasNickname) {
-        await cacheOnboardingNickname(serverNickname);
-      } else {
-        await cacheOnboardingNickname("");
-      }
+    if (hasNickname) {
+      await cacheOnboardingNickname(serverNickname);
+    } else {
+      await cacheOnboardingNickname("");
+    }
 
-      if (me.onboardingCompleted) {
-        router.replace(
-          hasNickname ? "/router/homeSetting" : "/onboardingnickname",
-        );
-        return;
-      }
+    if (me.onboardingCompleted) {
+      router.replace(hasNickname ? "/homeSetting" : "/onboardingnickname");
+      return;
+    }
 
-      router.replace("/onboarding.1");
-    },
-    [router],
-  );
+    router.replace("/onboarding.1");
+  }, [router]);
 
   const handleLoginError = useCallback((error: unknown) => {
     if (isUserCanceledSocialLogin(error)) {

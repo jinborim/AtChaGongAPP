@@ -12,7 +12,7 @@ import {
 import { completeOnboardingWithAlert } from "./onboardingCompletion";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/IceCup2.png");
+const ICE_CUP = require("../../assets/images/IceCup1-3.png");
 
 export default function Onboarding2() {
   return (
@@ -37,9 +37,9 @@ export default function Onboarding2() {
             className="absolute right-4 top-6 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
           >
-           <Text className="border-b border-gray-300 font-maru text-[16px] text-gray-300">
-          Skip
-          </Text>
+            <Text className="border-b border-gray-300 font-maru text-[16px] text-gray-300">
+              Skip
+            </Text>
           </Pressable>
 
           <View className="items-center">
@@ -71,13 +71,11 @@ export default function Onboarding2() {
           <View className="absolute bottom-14 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.replace("/onboarding.3")} 
+              onPress={() => router.replace("/onboarding.3")}
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >
-              <Text className="font-maru text-[12px] text-primary">
-                다음
-              </Text>
+              <Text className="font-maru text-[12px] text-primary">다음</Text>
             </Pressable>
           </View>
         </View>

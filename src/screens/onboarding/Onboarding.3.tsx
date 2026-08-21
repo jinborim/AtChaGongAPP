@@ -12,7 +12,7 @@ import {
 import { completeOnboardingWithAlert } from "./onboardingCompletion";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/IceCup3.png");
+const ICE_CUP = require("../../assets/images/IceCup1-4.png");
 
 export default function Onboarding3() {
   return (
@@ -37,9 +37,9 @@ export default function Onboarding3() {
             className="absolute right-4 top-6 z-10 px-3 py-2"
             style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
           >
-           <Text className="border-b border-gray-300 font-maru text-[16px] text-gray-300">
-           Skip
-          </Text>
+            <Text className="border-b border-gray-300 font-maru text-[16px] text-gray-300">
+              Skip
+            </Text>
           </Pressable>
 
           <View className="items-center">
@@ -53,8 +53,7 @@ export default function Onboarding3() {
               다 녹으면, {"\n"}얼음으로 가득채워요
             </Text>
             <Text className="mt-[18px] text-center font-maru text-[16px] leading-[24px] text-gray-300">
-              집중이 끝나면 휴식 시간 동안{"\n"}
-              새 얼음이 만들어져요{"\n"}
+              집중이 끝나면 휴식 시간 동안{"\n"}새 얼음이 만들어져요{"\n"}
               녹이고 채우며 리듬을 만들어요.
             </Text>
           </View>
@@ -72,13 +71,11 @@ export default function Onboarding3() {
           <View className="absolute bottom-14 left-10 right-10 h-12 overflow-hidden rounded-[7px] border border-primary bg-white">
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.replace("/onboarding.4")} 
+              onPress={() => router.replace("/onboarding.4")}
               className="flex-1 items-center justify-center"
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >
-              <Text className="font-maru text-[12px] text-primary">
-                다음
-              </Text>
+              <Text className="font-maru text-[12px] text-primary">다음</Text>
             </Pressable>
           </View>
         </View>

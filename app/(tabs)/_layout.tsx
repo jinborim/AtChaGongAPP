@@ -11,9 +11,9 @@ export default function TabLayout() {
         lazy: false,
       }}
     >
-      <Tabs.Screen name="router/homeSetting" />
+      <Tabs.Screen name="homeSetting" />
       <Tabs.Screen name="month" />
-      <Tabs.Screen name="mypage/index" />
+      <Tabs.Screen name="mypage" />
     </Tabs>
   );
 }

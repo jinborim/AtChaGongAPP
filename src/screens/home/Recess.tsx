@@ -58,7 +58,7 @@ export default function CoolingScreen() {
           AsyncStorage.setItem("currentCycle", String(nextCycle)),
           AsyncStorage.setItem("autoStartFocus", "true"),
         ])
-          .then(() => router.replace("/router/homeSetting"))
+          .then(() => router.replace("/homeSetting"))
           .catch((error) => console.log("다음 사이클 시작 오류:", error));
       }
     }, 50);

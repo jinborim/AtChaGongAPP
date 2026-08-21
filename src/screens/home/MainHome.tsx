@@ -102,7 +102,7 @@ export default function StudyScreen() {
               if (!finished) return;
 
               settingsHandleTranslateX.setValue(0);
-              router.push("/router/TimerSetting");
+              router.push("/timerSetting");
             });
             return;
           }
@@ -187,17 +187,12 @@ export default function StudyScreen() {
           if (!isRunningRef.current) {
             setFocusMinutes(serverFocusMinutes);
             setCycleCount(serverCycleCount);
-            setCurrentCycle((previous) =>
-              Math.min(serverCycleCount, previous),
-            );
+            setCurrentCycle((previous) => Math.min(serverCycleCount, previous));
             setRemainingMilliseconds(serverDuration);
           }
 
           await Promise.all([
-            AsyncStorage.setItem(
-              "focusMinutes",
-              String(serverFocusMinutes),
-            ),
+            AsyncStorage.setItem("focusMinutes", String(serverFocusMinutes)),
             AsyncStorage.setItem("cycleCount", String(serverCycleCount)),
           ]);
         } catch (error) {
@@ -411,7 +406,7 @@ export default function StudyScreen() {
               ]}
               onAccessibilityAction={(event) => {
                 if (event.nativeEvent.actionName === "activate") {
-                  router.push("/router/TimerSetting");
+                  router.push("/timerSetting");
                 }
               }}
               className="absolute h-[110px] w-[220px]"
