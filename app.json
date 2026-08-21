@@ -4,7 +4,7 @@
     "slug": "atchagong",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/images/Penguin1.png",
+    "icon": "./src/assets/images/Ice.png",
     "scheme": "atchagongapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
