@@ -337,6 +337,16 @@ export default function StudyScreen() {
     setIsRunning(true);
   };
 
+  const resetTimer = () => {
+    clearActiveTimerSession();
+    timerStartedAtRef.current = null;
+    setCurrentCycle(MIN_CYCLE_COUNT);
+    setTimerPhase("focus");
+    setRemainingMilliseconds(getFocusDurationMilliseconds(focusMinutes));
+    setEndTime(null);
+    setIsRunning(false);
+  };
+
   const closeCompleteModal = async () => {
     const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
     const minutes = parseStoredFocusMinutes(savedFocusMinutes);
@@ -431,25 +441,39 @@ export default function StudyScreen() {
           breakProgress={timerPhase === "break" ? timerProgress : 0}
         />
 
-        <TouchableOpacity
-          className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
-            isRunning
-              ? "opacity-0"
-              : isSettingsLoaded
-                ? "opacity-100"
-                : "opacity-50"
-          }`}
-          disabled={
-            !isSettingsLoaded || isRunning || remainingMilliseconds === 0
-          }
-          onPress={startTimer}
-        >
-          <Image
-            source={require("../../assets/images/PlayButton.png")}
-            className="h-[72px] w-[100px]"
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+        {isRunning ? (
+          <TouchableOpacity
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="타이머 초기화"
+            accessibilityHint="실행 중인 타이머를 기록하지 않고 초기화합니다"
+            className="mt-2 h-[72px] w-[100px] items-center justify-center"
+            onPress={resetTimer}
+          >
+            <Image
+              source={require("../../assets/images/ResetButton.png")}
+              className="h-[72px] w-[100px]"
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="타이머 시작"
+            className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
+              isSettingsLoaded ? "opacity-100" : "opacity-50"
+            }`}
+            disabled={!isSettingsLoaded || remainingMilliseconds === 0}
+            onPress={startTimer}
+          >
+            <Image
+              source={require("../../assets/images/PlayButton.png")}
+              className="h-[72px] w-[100px]"
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        )}
 
         <CustomModal
           visible={showCompleteModal}
