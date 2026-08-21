@@ -309,10 +309,13 @@ export default function StudyScreen() {
       : breakDurationMilliseconds === 0
         ? 0
         : 1 - remainingMilliseconds / breakDurationMilliseconds;
+  const canResetTimer =
+    isRunning && (timerPhase === "focus" || timerPhase === "break");
 
   const startTimer = async () => {
     if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
 
+    setIsRunning(true);
     setTimerPhase("focus");
     const startedAt = new Date().toISOString();
     const nextEndTime = Date.now() + remainingMilliseconds;
@@ -334,7 +337,16 @@ export default function StudyScreen() {
       startedAt,
     });
     setEndTime(nextEndTime);
-    setIsRunning(true);
+  };
+
+  const resetTimer = () => {
+    clearActiveTimerSession();
+    timerStartedAtRef.current = null;
+    setCurrentCycle(MIN_CYCLE_COUNT);
+    setTimerPhase("focus");
+    setRemainingMilliseconds(getFocusDurationMilliseconds(focusMinutes));
+    setEndTime(null);
+    setIsRunning(false);
   };
 
   const closeCompleteModal = async () => {
@@ -432,22 +444,34 @@ export default function StudyScreen() {
         />
 
         <TouchableOpacity
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={canResetTimer ? "타이머 초기화" : "타이머 시작"}
+          accessibilityHint={
+            canResetTimer
+              ? "실행 중인 타이머를 기록하지 않고 초기화합니다"
+              : undefined
+          }
           className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
-            isRunning
-              ? "opacity-0"
-              : isSettingsLoaded
-                ? "opacity-100"
-                : "opacity-50"
+            !canResetTimer && !isSettingsLoaded ? "opacity-50" : "opacity-100"
           }`}
           disabled={
-            !isSettingsLoaded || isRunning || remainingMilliseconds === 0
+            !canResetTimer &&
+            (!isSettingsLoaded || remainingMilliseconds === 0)
           }
-          onPress={startTimer}
+          onPress={canResetTimer ? resetTimer : startTimer}
         >
           <Image
             source={require("../../assets/images/PlayButton.png")}
-            className="h-[72px] w-[100px]"
+            className="absolute h-[72px] w-[100px]"
             resizeMode="contain"
+            style={{ opacity: canResetTimer ? 0 : 1 }}
+          />
+          <Image
+            source={require("../../assets/images/ResetButton.png")}
+            className="absolute h-[68px] w-[91px]"
+            resizeMode="contain"
+            style={{ opacity: canResetTimer ? 1 : 0 }}
           />
         </TouchableOpacity>
 
