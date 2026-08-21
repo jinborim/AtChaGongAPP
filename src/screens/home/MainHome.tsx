@@ -315,6 +315,7 @@ export default function StudyScreen() {
   const startTimer = async () => {
     if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
 
+    setIsRunning(true);
     setTimerPhase("focus");
     const startedAt = new Date().toISOString();
     const nextEndTime = Date.now() + remainingMilliseconds;
@@ -336,7 +337,6 @@ export default function StudyScreen() {
       startedAt,
     });
     setEndTime(nextEndTime);
-    setIsRunning(true);
   };
 
   const resetTimer = () => {
@@ -443,39 +443,37 @@ export default function StudyScreen() {
           breakProgress={timerPhase === "break" ? timerProgress : 0}
         />
 
-        {canResetTimer ? (
-          <TouchableOpacity
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="타이머 초기화"
-            accessibilityHint="실행 중인 타이머를 기록하지 않고 초기화합니다"
-            className="mt-2 h-[72px] w-[100px] items-center justify-center"
-            onPress={resetTimer}
-          >
-            <Image
-              source={require("../../assets/images/ResetButton.png")}
-              className="h-[72px] w-[100px]"
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="타이머 시작"
-            className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
-              isSettingsLoaded ? "opacity-100" : "opacity-50"
-            }`}
-            disabled={!isSettingsLoaded || remainingMilliseconds === 0}
-            onPress={startTimer}
-          >
-            <Image
-              source={require("../../assets/images/PlayButton.png")}
-              className="h-[72px] w-[100px]"
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={canResetTimer ? "타이머 초기화" : "타이머 시작"}
+          accessibilityHint={
+            canResetTimer
+              ? "실행 중인 타이머를 기록하지 않고 초기화합니다"
+              : undefined
+          }
+          className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
+            !canResetTimer && !isSettingsLoaded ? "opacity-50" : "opacity-100"
+          }`}
+          disabled={
+            !canResetTimer &&
+            (!isSettingsLoaded || remainingMilliseconds === 0)
+          }
+          onPress={canResetTimer ? resetTimer : startTimer}
+        >
+          <Image
+            source={require("../../assets/images/PlayButton.png")}
+            className="absolute h-[72px] w-[100px]"
+            resizeMode="contain"
+            style={{ opacity: canResetTimer ? 0 : 1 }}
+          />
+          <Image
+            source={require("../../assets/images/ResetButton.png")}
+            className="absolute h-[72px] w-[100px]"
+            resizeMode="contain"
+            style={{ opacity: canResetTimer ? 1 : 0 }}
+          />
+        </TouchableOpacity>
 
         <CustomModal
           visible={showCompleteModal}
