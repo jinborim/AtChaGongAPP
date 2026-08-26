@@ -3,7 +3,6 @@ import CustomModal from "@/src/components/Modal/CustomModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import { logoutCurrentUser } from "@/src/features/auth/services";
 import { deleteMe, getMe, updateNickname } from "@/src/features/user";
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { Check, ChevronRight, Pencil } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -19,8 +18,6 @@ import {
 } from "react-native";
 const PRIMARY = "#183765";
 const DEFAULT_NICKNAME = "사용자";
-const KAKAO_PAY_DONATION_URL =
-  "https://qr.kakaopay.com/FHjo39K0L";
 
 export default function Mypage() {
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
@@ -130,14 +127,6 @@ export default function Mypage() {
   const handlePressNoticePage = () => {
     router.push("/notice");
   };
-  const handlePressDonation = async () => {
-    try {
-      await Linking.openURL(KAKAO_PAY_DONATION_URL);
-    } catch (error) {
-      console.log("후원 링크 열기 오류:", error);
-      Alert.alert("링크 열기 실패", "후원 페이지를 열 수 없습니다.");
-    }
-  };
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -204,26 +193,6 @@ export default function Mypage() {
 
           {/* 메뉴 내용 */}
           <View>
-            {/* 후원 */}
-            <TouchableOpacity
-              accessible
-              accessibilityRole="link"
-              accessibilityLabel="카카오페이로 후원하기"
-              className="h-16 flex-row items-center border-b-2 border-primary px-5"
-              activeOpacity={0.7}
-              onPress={handlePressDonation}
-            >
-              <Image
-                source={require("../../assets/images/Heart.png")}
-                className="absolute left-5 h-[28px] w-[28px]"
-                resizeMode="contain"
-              />
-              <Text className="ml-12 flex-1 font-maru text-md text-primary">
-                후원
-              </Text>
-              <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
-            </TouchableOpacity>
-
             {/* 공지사항 */}
             <TouchableOpacity
               className="h-16 flex-row items-center border-b-2 border-primary px-5"
