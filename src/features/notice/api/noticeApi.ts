@@ -4,6 +4,7 @@ import { NoticeDetail, NoticeList } from "./types";
 export function getNotices(page: number, size: number) {
   return apiClient.request<NoticeList>("/notices", {
     query: { page, size },
+    auth: false,
   });
 }
 
@@ -12,5 +13,7 @@ export function getNotices(page: number, size: number) {
  * @param noticeId 공지사항 ID
  */
 export function getNoticeDetail(noticeId: number) {
-  return apiClient.request<NoticeDetail>(`/notices/${noticeId}`);
+  return apiClient.request<NoticeDetail>(`/notices/${noticeId}`, {
+    auth: false,
+  });
 }
