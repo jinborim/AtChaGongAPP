@@ -496,7 +496,7 @@ export default function StudyScreen() {
             isGuest
               ? () => {
                   closeCompleteModal()
-                    .then(() => router.push("/login"))
+                    .then(() => router.replace("/login"))
                     .catch((error) =>
                       console.log("완료 모달 처리 오류:", error),
                     );

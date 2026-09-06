@@ -29,7 +29,7 @@ function RootNavigator() {
       }}
     >
       <Stack.Screen name="index" options={{ animation: "none" }} />
-      <Stack.Screen name="login" />
+      <Stack.Screen name="login" options={{ gestureEnabled: false }} />
       <Stack.Protected guard={canAccessApp}>
         <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
         <Stack.Screen name="timerSetting" />

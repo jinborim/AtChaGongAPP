@@ -21,7 +21,7 @@ export default function LoginRequiredModal({
       onClose={onClose}
       onConfirm={() => {
         onClose();
-        router.push("/login");
+        router.replace("/login");
       }}
       title="로그인이 필요해요"
       description={description}

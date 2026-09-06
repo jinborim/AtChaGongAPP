@@ -190,7 +190,7 @@ export default function Mypage() {
             </Text>
             <Pressable
               className="h-11 w-40 items-center justify-center rounded-[12px] bg-primary"
-              onPress={() => router.push("/login")}
+              onPress={() => router.replace("/login")}
             >
               <Text className="font-maru text-sm text-white">로그인하기</Text>
             </Pressable>
