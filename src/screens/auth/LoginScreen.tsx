@@ -239,7 +239,7 @@ export default function LoginScreen() {
         )}
 
         <Pressable
-          className="h-[45px] items-center justify-center rounded-full border border-primary bg-white/80 active:bg-white"
+          className="h-[45px] items-center justify-center rounded-full  bg-white/80 active:bg-white"
           disabled={loginState.isLoading}
           onPress={() => setIsGuestNoticeOpen(true)}
         >
