@@ -1,4 +1,5 @@
 import { ApiError, clearAuthTokensForRecovery } from "@/src/api";
+import { useAuth } from "@/src/features/auth";
 import { updateNickname } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -50,6 +51,7 @@ function getNicknameErrorMessage(error: unknown) {
 }
 
 export default function OnboardingNickname() {
+  const { setSignedOut, updateCurrentUser } = useAuth();
   const [nickname, setNickname] = useState("");
   const [savedNickname, setSavedNickname] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,6 +69,7 @@ export default function OnboardingNickname() {
         await AsyncStorage.setItem("nickname", response.nickname);
         setNickname(response.nickname);
         setSavedNickname(response.nickname);
+        updateCurrentUser({ nickname: response.nickname });
       }
 
       router.replace("/homeSetting");
@@ -77,6 +80,7 @@ export default function OnboardingNickname() {
 
       if (shouldReturnToLogin) {
         await clearAuthTokensForRecovery();
+        setSignedOut();
       }
 
       Alert.alert("저장에 실패했어요", getNicknameErrorMessage(error), [

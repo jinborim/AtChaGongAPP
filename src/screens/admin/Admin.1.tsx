@@ -1,4 +1,6 @@
 import { getAdminUserSummary } from "@/src/features/auth/api/adminApi";
+import { useAuth } from "@/src/features/auth";
+import { logoutCurrentUser } from "@/src/features/auth/services";
 import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useState } from "react";
@@ -17,9 +19,27 @@ const ADMIN_PENGUIN = require("../../assets/images/AdminPenguin.gif");
 const ADMINNOTICE = require("../../assets/images/AdminNotice.png");
 
 export default function Admin1() {
+  const { setSignedOut } = useAuth();
   const [totalUserCount, setTotalUserCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    try {
+      await logoutCurrentUser();
+    } catch {
+      // 서버 요청 실패 여부와 관계없이 logoutCurrentUser가 로컬 토큰을 정리합니다.
+    } finally {
+      setSignedOut();
+      router.replace("/login");
+      setIsLoggingOut(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -119,14 +139,19 @@ export default function Admin1() {
 
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.replace("/login")}
+            accessibilityState={{ disabled: isLoggingOut }}
+            disabled={isLoggingOut}
+            onPress={() => {
+              void handleLogout();
+            }}
             className="mb-14 mt-auto h-[52px] flex-row items-center justify-center rounded-[8px] border border-primary bg-primary"
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
-            <Text className="font-maru text-[12px] text-white">로그아웃</Text>
+            <Text className="font-maru text-[12px] text-white">
+              {isLoggingOut ? "로그아웃 중" : "로그아웃"}
+            </Text>
           </Pressable>
         </View>
-
       </SafeAreaView>
     </ImageBackground>
   );

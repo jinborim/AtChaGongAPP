@@ -1,4 +1,6 @@
 export { logout, socialLogin } from "./api";
+export { AuthProvider, useAuth } from "./context/AuthContext";
+export type { AuthStatus } from "./context/AuthContext";
 export type {
   AuthType,
   LoginResponse,

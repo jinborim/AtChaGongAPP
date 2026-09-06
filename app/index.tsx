@@ -1,12 +1,16 @@
+import { useAuth } from "@/src/features/auth";
+import { hasUsableNickname } from "@/src/screens/onboarding/onboardingCompletion";
 import { useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Image, ImageBackground, Text, View } from "react-native";
 
 const SPLASH_DURATION = 1800;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { isAdmin, status, user } = useAuth();
   const loadingProgress = useRef(new Animated.Value(0)).current;
+  const [isAnimationFinished, setIsAnimationFinished] = useState(false);
 
   useEffect(() => {
     const animation = Animated.timing(loadingProgress, {
@@ -17,12 +21,38 @@ export default function HomeScreen() {
 
     animation.start(({ finished }) => {
       if (finished) {
-        router.replace("/login");
+        setIsAnimationFinished(true);
       }
     });
 
     return () => animation.stop();
-  }, [loadingProgress, router]);
+  }, [loadingProgress]);
+
+  useEffect(() => {
+    if (!isAnimationFinished || status === "loading") return;
+
+    if (status === "signedOut") {
+      router.replace("/login");
+      return;
+    }
+
+    if (isAdmin) {
+      router.replace("/admin.1");
+      return;
+    }
+
+    if (status === "authenticated" && !user?.onboardingCompleted) {
+      router.replace("/onboarding.1");
+      return;
+    }
+
+    if (status === "authenticated" && !hasUsableNickname(user?.nickname)) {
+      router.replace("/onboardingnickname");
+      return;
+    }
+
+    router.replace("/homeSetting");
+  }, [isAdmin, isAnimationFinished, router, status, user]);
 
   const loadingWidth = loadingProgress.interpolate({
     inputRange: [0, 1],

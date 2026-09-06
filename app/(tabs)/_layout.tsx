@@ -1,6 +1,9 @@
+import { useAuth } from "@/src/features/auth";
 import { Tabs } from "expo-router";
 
 export default function TabLayout() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Tabs
       detachInactiveScreens={false}
@@ -12,7 +15,9 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="homeSetting" />
-      <Tabs.Screen name="month" />
+      <Tabs.Protected guard={isAuthenticated}>
+        <Tabs.Screen name="month" />
+      </Tabs.Protected>
       <Tabs.Screen name="mypage" />
     </Tabs>
   );

@@ -1,4 +1,6 @@
 import { clearAuthTokensForRecovery } from "@/src/api";
+import CustomModal from "@/src/components/Modal/CustomModal";
+import { useAuth } from "@/src/features/auth";
 import { useSocialProviderLogin } from "@/src/features/auth/hooks";
 import { isDevAuthTokenLoginEnabled } from "@/src/features/auth/services";
 import { isUserCanceledSocialLogin } from "@/src/features/auth/socialProvider";
@@ -21,6 +23,8 @@ import {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { continueAsGuest, setAuthenticatedUser } = useAuth();
+  const [isGuestNoticeOpen, setIsGuestNoticeOpen] = useState(false);
   const [webLoginErrorMessage, setWebLoginErrorMessage] = useState<
     string | null
   >(null);
@@ -38,6 +42,7 @@ export default function LoginScreen() {
     }
 
     if (me.userRole === "ADMIN") {
+      setAuthenticatedUser(me);
       router.replace("/admin.1");
       return;
     }
@@ -52,12 +57,14 @@ export default function LoginScreen() {
     }
 
     if (me.onboardingCompleted) {
+      setAuthenticatedUser(me);
       router.replace(hasNickname ? "/homeSetting" : "/onboardingnickname");
       return;
     }
 
+    setAuthenticatedUser(me);
     router.replace("/onboarding.1");
-  }, [router]);
+  }, [router, setAuthenticatedUser]);
 
   const handleLoginError = useCallback((error: unknown) => {
     if (isUserCanceledSocialLogin(error)) {
@@ -230,7 +237,32 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
         )}
+
+        <Pressable
+          className="h-[45px] items-center justify-center rounded-full border border-primary bg-white/80 active:bg-white"
+          disabled={loginState.isLoading}
+          onPress={() => setIsGuestNoticeOpen(true)}
+        >
+          <Text className="font-maru text-sm text-primary">
+            비회원으로 계속하기
+          </Text>
+        </Pressable>
       </View>
+      <CustomModal
+        visible={isGuestNoticeOpen}
+        onClose={() => setIsGuestNoticeOpen(false)}
+        onConfirm={() => {
+          setIsGuestNoticeOpen(false);
+          continueAsGuest()
+            .then(() => router.replace("/homeSetting"))
+            .catch((error) => console.log("비회원 상태 전환 오류:", error));
+        }}
+        title="비회원으로 이용할까요?"
+        description="타이머는 사용할 수 있지만 집중 기록과 개인 설정은 서버에 저장되지 않아요."
+        buttonCount={2}
+        confirmText="계속하기"
+        cancelText="취소"
+      />
     </ImageBackground>
   );
 }
