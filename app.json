@@ -2,7 +2,7 @@
   "expo": {
     "name": "앗차공-뽀모도로",
     "slug": "atchagong",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./src/assets/images/Ice.png",
     "scheme": "atchagongapp",
