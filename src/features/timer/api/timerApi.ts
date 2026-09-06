@@ -19,7 +19,7 @@ export function updateTimerSettings(request: UpdateTimerSettingsRequest) {
 }
 
 export function getBeverages() {
-  return apiClient.request<Beverage[]>("/beverages");
+  return apiClient.request<Beverage[]>("/beverages", { auth: false });
 }
 
 export function completeFocusRecord(request: CompleteFocusRecordRequest) {

@@ -9,12 +9,12 @@ import {
   getTimerSettings,
   updateTimerSettings,
 } from "@/src/features/timer";
+import { useAuth } from "@/src/features/auth";
 import {
   clearActiveTimerSession,
   getActiveTimerSession,
   setActiveTimerSession,
 } from "@/src/features/timer/activeTimerSession";
-import { getMe } from "@/src/features/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -51,6 +51,7 @@ const DEFAULT_NICKNAME = "사용자";
 
 export default function StudyScreen() {
   const router = useRouter();
+  const { isGuest, user } = useAuth();
   const [initialSession] = useState(() => getActiveTimerSession());
   const [focusMinutes, setFocusMinutes] = useState(
     initialSession?.focusMinutes ?? DEFAULT_FOCUS_MINUTES,
@@ -75,7 +76,9 @@ export default function StudyScreen() {
     initialSession?.currentCycle ?? MIN_CYCLE_COUNT,
   );
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
-  const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
+  const [nickname, setNickname] = useState(
+    isGuest ? "게스트" : user?.nickname || DEFAULT_NICKNAME,
+  );
   const isRunningRef = useRef(isRunning);
   const timerStartedAtRef = useRef<string | null>(
     initialSession?.startedAt ?? null,
@@ -154,6 +157,11 @@ export default function StudyScreen() {
           setIsRunning(false);
         }
 
+        if (isGuest) {
+          setNickname("게스트");
+          return;
+        }
+
         if (TIMER_QA_MODE) {
           setNickname("QA 사용자");
           if (!isRunningRef.current) {
@@ -166,10 +174,7 @@ export default function StudyScreen() {
         }
 
         try {
-          const [me, timerSettings] = await Promise.all([
-            getMe(),
-            getTimerSettings(),
-          ]);
+          const timerSettings = await getTimerSettings();
 
           if (!isActive) return;
 
@@ -182,7 +187,7 @@ export default function StudyScreen() {
           const serverDuration =
             getFocusDurationMilliseconds(serverFocusMinutes);
 
-          setNickname(me.nickname || DEFAULT_NICKNAME);
+          setNickname(user?.nickname || DEFAULT_NICKNAME);
 
           if (!isRunningRef.current) {
             setFocusMinutes(serverFocusMinutes);
@@ -211,11 +216,16 @@ export default function StudyScreen() {
       return () => {
         isActive = false;
       };
-    }, []),
+    }, [isGuest, user?.nickname]),
   );
 
   const sendFocusCompletion = useCallback(
     async (completedCycleCount: number) => {
+      if (isGuest) {
+        timerStartedAtRef.current = null;
+        return;
+      }
+
       const completedAt = new Date().toISOString();
 
       await completeFocusRecord({
@@ -228,7 +238,7 @@ export default function StudyScreen() {
 
       timerStartedAtRef.current = null;
     },
-    [focusMinutes],
+    [focusMinutes, isGuest],
   );
 
   useEffect(() => {
@@ -320,7 +330,7 @@ export default function StudyScreen() {
     const startedAt = new Date().toISOString();
     const nextEndTime = Date.now() + remainingMilliseconds;
     timerStartedAtRef.current = startedAt;
-    if (TIMER_QA_MODE) {
+    if (TIMER_QA_MODE && !isGuest) {
       updateTimerSettings({
         beverageId: DEFAULT_BEVERAGE_ID,
         focusMinutes: DEFAULT_FOCUS_MINUTES,
@@ -456,8 +466,7 @@ export default function StudyScreen() {
             !canResetTimer && !isSettingsLoaded ? "opacity-50" : "opacity-100"
           }`}
           disabled={
-            !canResetTimer &&
-            (!isSettingsLoaded || remainingMilliseconds === 0)
+            !canResetTimer && (!isSettingsLoaded || remainingMilliseconds === 0)
           }
           onPress={canResetTimer ? resetTimer : startTimer}
         >
@@ -483,9 +492,25 @@ export default function StudyScreen() {
             );
           }}
           title="수고하셨어요!"
-          description="설정한 사이클을 모두 완료했습니다."
-          buttonCount={1}
-          confirmText="확인"
+          onConfirm={
+            isGuest
+              ? () => {
+                  closeCompleteModal()
+                    .then(() => router.replace("/login"))
+                    .catch((error) =>
+                      console.log("완료 모달 처리 오류:", error),
+                    );
+                }
+              : undefined
+          }
+          description={
+            isGuest
+              ? "비회원의 집중 기록은 저장되지 않아요. 로그인하고 기록을 남겨 보세요."
+              : "설정한 사이클을 모두 완료했습니다."
+          }
+          buttonCount={isGuest ? 2 : 1}
+          confirmText={isGuest ? "로그인하기" : "확인"}
+          cancelText="확인"
         />
       </SafeAreaView>
       <NavigationBar />
