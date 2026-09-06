@@ -1,6 +1,8 @@
 // 타이머 설정 퍼블리싱 화면
 import Header from "@/src/components/Header/Header";
+import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
 import TimerProgressBar from "@/src/components/TimerProgressBar";
+import { useAuth } from "@/src/features/auth";
 import { getTimerSettings, updateTimerSettings } from "@/src/features/timer";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -134,9 +136,11 @@ function SettingCard({
 
 export default function TimerSettingScreen() {
   const router = useRouter();
+  const { isGuest } = useAuth();
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -145,6 +149,8 @@ export default function TimerSettingScreen() {
       const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
 
       setFocusMinutes(parseStoredFocusMinutes(savedFocusMinutes));
+
+      if (isGuest) return;
 
       try {
         const timerSettings = await getTimerSettings();
@@ -158,9 +164,14 @@ export default function TimerSettingScreen() {
     loadSettings()
       .catch((error) => console.log("타이머 설정 불러오기 오류:", error))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [isGuest]);
 
   const saveSettings = async () => {
+    if (isGuest) {
+      setIsLoginPromptOpen(true);
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -255,6 +266,11 @@ export default function TimerSettingScreen() {
             )}
           </TouchableOpacity>
         </View>
+        <LoginRequiredModal
+          visible={isLoginPromptOpen}
+          onClose={() => setIsLoginPromptOpen(false)}
+          description="개인 타이머 설정을 저장하려면 로그인이 필요해요."
+        />
       </SafeAreaView>
     </ImageBackground>
   );
