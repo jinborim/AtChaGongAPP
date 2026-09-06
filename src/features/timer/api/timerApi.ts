@@ -23,7 +23,7 @@ export function getBeverages() {
 }
 
 export function completeFocusRecord(request: CompleteFocusRecordRequest) {
-  return apiClient.request<unknown>("/timer/focus-records", {
+  return apiClient.request<unknown>("/focus-records", {
     method: "POST",
     body: request,
   });

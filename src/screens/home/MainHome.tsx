@@ -252,22 +252,22 @@ export default function StudyScreen() {
 
       while (now >= nextEndTime) {
         if (nextPhase === "focus") {
-          if (nextCycle >= cycleCount) {
-            clearInterval(timer);
-            clearActiveTimerSession();
-            setRemainingMilliseconds(0);
-            setEndTime(null);
-            setIsRunning(false);
-            sendFocusCompletion(cycleCount).catch((error) =>
-              console.log("집중 완료 기록 전송 오류:", error),
-            );
-            setShowCompleteModal(true);
-            return;
-          }
-
           nextPhase = "break";
           nextEndTime += getBreakDurationMilliseconds();
           continue;
+        }
+
+        if (nextCycle >= cycleCount) {
+          clearInterval(timer);
+          clearActiveTimerSession();
+          setRemainingMilliseconds(0);
+          setEndTime(null);
+          setIsRunning(false);
+          sendFocusCompletion(cycleCount).catch((error) =>
+            console.log("집중 완료 기록 전송 오류:", error),
+          );
+          setShowCompleteModal(true);
+          return;
         }
 
         nextPhase = "focus";
