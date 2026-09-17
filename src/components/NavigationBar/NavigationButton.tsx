@@ -1,18 +1,19 @@
-import {
-  Image,
-  type ImageSourcePropType,
-  TouchableOpacity,
-} from "react-native";
+import { Image } from "expo-image";
+import { type ImageSourcePropType, TouchableOpacity } from "react-native";
 
 type NavigationButtonProps = {
   label: string;
   icon: ImageSourcePropType;
+  iconSize?: number;
+  iconOffsetY?: number;
   onPress: () => void;
 };
 
 export default function NavigationButton({
   label,
   icon,
+  iconSize = 52,
+  iconOffsetY = 0,
   onPress,
 }: NavigationButtonProps) {
   return (
@@ -24,8 +25,14 @@ export default function NavigationButton({
     >
       <Image
         source={icon}
-        className="h-[52px] w-[52px]"
-        resizeMode="contain"
+        style={{
+          width: iconSize,
+          height: iconSize,
+          transform: [{ translateY: iconOffsetY }],
+        }}
+        contentFit="contain"
+        cachePolicy="memory-disk"
+        transition={0}
       />
     </TouchableOpacity>
   );

@@ -9,10 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "appleTeamId": "SS32PHC392",
       "supportsTablet": false,
       "bundleIdentifier": "com.atchagong.atchagong",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.atchagong.atchagong.timer"
+        ]
+      },
       "infoPlist": {
+        "NSSupportsLiveActivities": true,
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -32,6 +39,7 @@
       "bundler": "metro"
     },
     "plugins": [
+      "@bacons/apple-targets",
       "expo-router",
       [
         "expo-splash-screen",

@@ -7,7 +7,6 @@ import TimerSessionContent, {
 import {
   completeFocusRecord,
   getTimerSettings,
-  updateTimerSettings,
 } from "@/src/features/timer";
 import { useAuth } from "@/src/features/auth";
 import {
@@ -16,6 +15,7 @@ import {
   setActiveTimerSession,
 } from "@/src/features/timer/activeTimerSession";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { prepareTimerSurfaces } from "@/src/features/timer/timerSurfaces";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,15 +30,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import {
-  BREAK_MINUTES,
   DEFAULT_BEVERAGE_ID,
   DEFAULT_CYCLE_COUNT,
   DEFAULT_FOCUS_MINUTES,
   getBreakDurationMilliseconds,
   getFocusDurationMilliseconds,
-  MAX_CYCLE_COUNT,
   MIN_CYCLE_COUNT,
-  TIMER_QA_MODE,
 } from "../../constants/timer";
 import {
   normalizeCycleCount,
@@ -69,6 +66,8 @@ export default function StudyScreen() {
     initialSession?.endTime ?? null,
   );
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [interactionSignal, setInteractionSignal] = useState(0);
   const [cycleCount, setCycleCount] = useState(
     initialSession?.cycleCount ?? DEFAULT_CYCLE_COUNT,
   );
@@ -80,6 +79,8 @@ export default function StudyScreen() {
     isGuest ? "게스트" : user?.nickname || DEFAULT_NICKNAME,
   );
   const isRunningRef = useRef(isRunning);
+  const isStartingRef = useRef(false);
+  const isMountedRef = useRef(true);
   const timerStartedAtRef = useRef<string | null>(
     initialSession?.startedAt ?? null,
   );
@@ -126,6 +127,11 @@ export default function StudyScreen() {
   );
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
     isRunningRef.current = isRunning;
   }, [isRunning]);
 
@@ -159,17 +165,6 @@ export default function StudyScreen() {
 
         if (isGuest) {
           setNickname("게스트");
-          return;
-        }
-
-        if (TIMER_QA_MODE) {
-          setNickname("QA 사용자");
-          if (!isRunningRef.current) {
-            setFocusMinutes(DEFAULT_FOCUS_MINUTES);
-            setCycleCount(MAX_CYCLE_COUNT);
-            setCurrentCycle(MIN_CYCLE_COUNT);
-          }
-          await AsyncStorage.setItem("cycleCount", String(MAX_CYCLE_COUNT));
           return;
         }
 
@@ -266,6 +261,7 @@ export default function StudyScreen() {
           sendFocusCompletion(cycleCount).catch((error) =>
             console.log("집중 완료 기록 전송 오류:", error),
           );
+          setShowResetModal(false);
           setShowCompleteModal(true);
           return;
         }
@@ -323,21 +319,18 @@ export default function StudyScreen() {
     isRunning && (timerPhase === "focus" || timerPhase === "break");
 
   const startTimer = async () => {
-    if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
+    if (!isSettingsLoaded || isRunning || isStartingRef.current || remainingMilliseconds === 0) return;
+
+    isStartingRef.current = true;
+    await prepareTimerSurfaces();
+    isStartingRef.current = false;
+    if (!isMountedRef.current) return;
 
     setIsRunning(true);
     setTimerPhase("focus");
     const startedAt = new Date().toISOString();
     const nextEndTime = Date.now() + remainingMilliseconds;
     timerStartedAtRef.current = startedAt;
-    if (TIMER_QA_MODE && !isGuest) {
-      updateTimerSettings({
-        beverageId: DEFAULT_BEVERAGE_ID,
-        focusMinutes: DEFAULT_FOCUS_MINUTES,
-        breakMinutes: BREAK_MINUTES,
-        cycleCount: MAX_CYCLE_COUNT,
-      }).catch((error) => console.log("QA 타이머 설정 전송 오류:", error));
-    }
     setActiveTimerSession({
       phase: "focus",
       endTime: nextEndTime,
@@ -350,6 +343,9 @@ export default function StudyScreen() {
   };
 
   const resetTimer = () => {
+    setShowResetModal(false);
+    if (!isRunning) return;
+
     clearActiveTimerSession();
     timerStartedAtRef.current = null;
     setCurrentCycle(MIN_CYCLE_COUNT);
@@ -376,7 +372,10 @@ export default function StudyScreen() {
       className="flex-1"
       resizeMode="cover"
     >
-      <SafeAreaView className="flex-1 items-center">
+      <SafeAreaView
+        className="flex-1 items-center"
+        onTouchStart={() => setInteractionSignal((current) => current + 1)}
+      >
         <View className="mt-10 h-[120px] w-full items-center justify-center">
           {isRunning ? (
             <View className="h-[120px] w-[80%] justify-center">
@@ -448,6 +447,8 @@ export default function StudyScreen() {
         </View>
 
         <TimerSessionContent
+          isRunning={isRunning}
+          interactionSignal={interactionSignal}
           phase={timerPhase}
           focusProgress={timerPhase === "focus" ? timerProgress : 0}
           breakProgress={timerPhase === "break" ? timerProgress : 0}
@@ -459,7 +460,7 @@ export default function StudyScreen() {
           accessibilityLabel={canResetTimer ? "타이머 초기화" : "타이머 시작"}
           accessibilityHint={
             canResetTimer
-              ? "실행 중인 타이머를 기록하지 않고 초기화합니다"
+              ? "사이클 초기화 확인 팝업을 엽니다"
               : undefined
           }
           className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
@@ -468,7 +469,9 @@ export default function StudyScreen() {
           disabled={
             !canResetTimer && (!isSettingsLoaded || remainingMilliseconds === 0)
           }
-          onPress={canResetTimer ? resetTimer : startTimer}
+          onPress={
+            canResetTimer ? () => setShowResetModal(true) : startTimer
+          }
         >
           <Image
             source={require("../../assets/images/PlayButton.png")}
@@ -478,11 +481,23 @@ export default function StudyScreen() {
           />
           <Image
             source={require("../../assets/images/ResetButton.png")}
-            className="absolute h-[68px] w-[91px]"
-            resizeMode="contain"
+            // 원본 이미지의 투명 여백을 감안해 재생 버튼의 실제 테두리 크기에 맞춥니다.
+            className="absolute h-[60px] w-[87px]"
+            resizeMode="stretch"
             style={{ opacity: canResetTimer ? 1 : 0 }}
           />
         </TouchableOpacity>
+
+        <CustomModal
+          visible={showResetModal && isRunning}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={resetTimer}
+          title="초기화"
+          description="사이클을 초기화하시겠습니까?"
+          buttonCount={2}
+          confirmText="확인"
+          cancelText="취소"
+        />
 
         <CustomModal
           visible={showCompleteModal}

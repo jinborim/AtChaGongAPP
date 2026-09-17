@@ -1,0 +1,4 @@
+<resources>
+  <string name="timer_widget_name">앗차공 타이머</string>
+  <string name="timer_widget_description">집중·휴식 세션의 남은 시간을 확인해요</string>
+</resources>
