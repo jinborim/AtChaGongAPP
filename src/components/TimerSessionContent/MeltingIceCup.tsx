@@ -24,13 +24,12 @@ const FINAL_SURFACE_Y = 176;
 const CUP_INTERIOR =
   "M40 78 Q162 104 284 78 L260 372 Q162 410 64 372 Z";
 const CUP_OPENING = "M40 78 Q162 22 284 78 Q162 108 40 78 Z";
-const CUP_BACK_RIM = "M42 77 Q162 25 282 77";
 const ICE_INTERIOR =
-  "M36 42 Q162 16 288 42 L264 378 Q162 416 60 378 Z";
+  "M44 70 Q162 8 280 70 L256 370 Q162 404 68 370 Z";
 const GLASS_FACE = "M34 76 Q162 104 290 76 L264 386 Q162 420 58 386 Z";
 const CUP_SCALE_X = 0.92;
 const CUP_SCALE_Y = 0.96;
-const ICE_FILL_SCALE = 1.05;
+const ICE_FILL_SCALE = 1.12;
 const CUP_TRANSFORM = `translate(${VIEWBOX_WIDTH / 2} ${VIEWBOX_HEIGHT / 2}) scale(${CUP_SCALE_X} ${CUP_SCALE_Y}) translate(${-VIEWBOX_WIDTH / 2} ${-VIEWBOX_HEIGHT / 2})`;
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
@@ -75,11 +74,11 @@ const CONDENSATION = [
 ] as const;
 
 const GLASS_REFLECTIONS = [
-  { x: 67, y: 116, width: 6, height: 52 },
-  { x: 76, y: 106, width: 5, height: 18 },
+  { x: 67, y: 80, width: 6, height: 88 },
+  { x: 76, y: 82, width: 5, height: 42 },
   { x: 82, y: 174, width: 4, height: 24 },
-  { x: 246, y: 132, width: 6, height: 44 },
-  { x: 238, y: 180, width: 5, height: 22 },
+  { x: 246, y: 80, width: 6, height: 96 },
+  { x: 238, y: 118, width: 5, height: 84 },
   { x: 228, y: 252, width: 4, height: 30 },
 ] as const;
 
@@ -176,7 +175,7 @@ export default function MeltingIceCup({
           <Path d={waterBody} />
         </ClipPath>
         <ClipPath id={`${id}-glass-top`}>
-          <Rect x={0} y={0} width={VIEWBOX_WIDTH} height={112} />
+          <Rect x={0} y={0} width={VIEWBOX_WIDTH} height={92} />
         </ClipPath>
         <ClipPath id={`${id}-glass-bottom`}>
           <Rect x={0} y={382} width={VIEWBOX_WIDTH} height={50} />
@@ -230,14 +229,6 @@ export default function MeltingIceCup({
         </G>
 
         <Path d={CUP_OPENING} fill="#e1ebf5" opacity={0.46} />
-        <Path
-          d={CUP_BACK_RIM}
-          fill="none"
-          stroke="#dff6ff"
-          strokeWidth={5}
-          strokeLinecap="square"
-          opacity={0.62}
-        />
 
         {fill > 0.002 && (
           <G clipPath={`url(#${id}-interior)`}>
@@ -309,7 +300,7 @@ export default function MeltingIceCup({
           width={VIEWBOX_WIDTH}
           height={VIEWBOX_HEIGHT}
           preserveAspectRatio="none"
-          opacity={0.18}
+          opacity={0.3}
         />
         <G clipPath={`url(#${id}-glass-top)`}>
           <SvgImage
@@ -355,8 +346,8 @@ export default function MeltingIceCup({
         <G
           clipPath={`url(#${id}-glass-face)`}
           opacity={
-            0.2 +
-            (animatePhysics ? (Math.sin(motionTime / 620) + 1) * 0.035 : 0)
+            0.3 +
+            (animatePhysics ? (Math.sin(motionTime / 620) + 1) * 0.05 : 0)
           }
         >
           {GLASS_REFLECTIONS.map((reflection, index) => (

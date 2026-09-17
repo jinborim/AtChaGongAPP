@@ -256,11 +256,12 @@ const createSimulation = (
   engine.gravity.scale = 0.001;
 
   const iceBodies = iceSprites.map((sprite, index) => {
+    const collisionWidthScale = iceSettlesToBottom ? 0.68 : 0.7;
     const body = Matter.Bodies.rectangle(
       sprite.x,
       sprite.y,
-      sprite.displayWidth * (iceSettlesToBottom ? 0.42 : 0.7),
-      sprite.displayHeight * (iceSettlesToBottom ? 0.68 : 0.7),
+      sprite.displayWidth * collisionWidthScale,
+      sprite.displayHeight * 0.7,
       {
         angle: sprite.angle,
         chamfer: { radius: 7 },
@@ -303,8 +304,20 @@ const createSimulation = (
   }) : [];
 
   const walls = [
-    createWall(40, 70, 101, 356, iceSettlesToBottom ? 0.008 : 0.32),
-    createWall(260, 70, 211, 356, iceSettlesToBottom ? 0.008 : 0.32),
+    createWall(
+      40,
+      iceSettlesToBottom ? 78 : 70,
+      iceSettlesToBottom ? 64 : 101,
+      iceSettlesToBottom ? 372 : 356,
+      iceSettlesToBottom ? 0.008 : 0.32,
+    ),
+    createWall(
+      iceSettlesToBottom ? 284 : 260,
+      iceSettlesToBottom ? 78 : 70,
+      iceSettlesToBottom ? 260 : 211,
+      iceSettlesToBottom ? 372 : 356,
+      iceSettlesToBottom ? 0.008 : 0.32,
+    ),
     Matter.Bodies.rectangle(150, 70, 220, 8, {
       isStatic: true,
       friction: iceSettlesToBottom ? 0.008 : 0.2,
@@ -314,7 +327,7 @@ const createSimulation = (
         mask: ICE_CATEGORY | LEMON_CATEGORY,
       },
     }),
-    Matter.Bodies.rectangle(156, iceFloorY, 116, 10, {
+    Matter.Bodies.rectangle(156, iceFloorY, iceSettlesToBottom ? 190 : 116, 10, {
       isStatic: true,
       friction: iceSettlesToBottom ? 0.01 : 0.38,
       restitution: 0.08,
@@ -527,8 +540,12 @@ export function useMatterIcePhysics(
             Math.max(minimumCenterY, body.position.y),
           );
           const depthRatio = clamp((nextY - 78) / (352 - 78));
-          const leftEdge = 75 + (105 - 75) * depthRatio;
-          const rightEdge = 238 + (207 - 238) * depthRatio;
+          const leftEdge = iceSettlesToBottom
+            ? 40 + (64 - 40) * depthRatio
+            : 75 + (105 - 75) * depthRatio;
+          const rightEdge = iceSettlesToBottom
+            ? 284 + (260 - 284) * depthRatio
+            : 238 + (207 - 238) * depthRatio;
           const nextX = Math.min(
             rightEdge - 2,
             Math.max(leftEdge + 2, body.position.x),
