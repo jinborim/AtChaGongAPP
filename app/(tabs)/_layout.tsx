@@ -18,6 +18,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="homeSetting" />
+      <Tabs.Screen name="store" />
       <Tabs.Protected guard={isAuthenticated}>
         <Tabs.Screen name="month" />
       </Tabs.Protected>
