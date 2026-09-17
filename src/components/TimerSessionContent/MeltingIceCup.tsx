@@ -36,6 +36,32 @@ const CUP_TRANSFORM = `translate(${VIEWBOX_WIDTH / 2} ${VIEWBOX_HEIGHT / 2}) sca
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 const snapPixel = (value: number) => Math.round(value / 4) * 4;
 
+const createPixelWavePath = (
+  left: number,
+  right: number,
+  surfaceY: number,
+  phase: number,
+  animated: boolean,
+) => {
+  const segmentCount = 10;
+  const points = Array.from({ length: segmentCount + 1 }, (_, index) => {
+    const ratio = index / segmentCount;
+    const perspectiveDepth = Math.sin(Math.PI * ratio) * 8;
+    const motion = animated ? Math.sin(phase + index * 0.82) * 3 : 0;
+
+    return {
+      x: snapPixel(left + (right - left) * ratio),
+      y: snapPixel(surfaceY + perspectiveDepth + motion),
+    };
+  });
+
+  return points.slice(1).reduce((path, point, index) => {
+    const previous = points[index];
+    const stepX = snapPixel((previous.x + point.x) / 2);
+    return `${path} H${stepX} V${point.y} H${point.x}`;
+  }, `M${points[0].x} ${points[0].y}`);
+};
+
 const CONDENSATION = [
   { x: 66, y: 126, length: 16 },
   { x: 91, y: 204, length: 9 },
@@ -116,23 +142,13 @@ export default function MeltingIceCup({
   const surfaceLeft = snapPixel(40 + (64 - 40) * depthRatio);
   const surfaceRight = snapPixel(284 + (260 - 284) * depthRatio);
   const wavePhase = motionTime / 390;
-  const waveA = animatePhysics ? Math.round(Math.sin(wavePhase) * 5) : 0;
-  const waveB = animatePhysics
-    ? Math.round(Math.sin(wavePhase + Math.PI * 0.72) * 5)
-    : 0;
-  const surfaceWidth = surfaceRight - surfaceLeft;
-  const surfaceCenter = Math.round((surfaceLeft + surfaceRight) / 2);
-  const perspectiveDip =
-    8 + (animatePhysics ? Math.round(Math.sin(wavePhase * 0.5) * 2) : 0);
-  const waterSurface = [
-    `M${surfaceLeft} ${surfaceY + waveA}`,
-    `C${Math.round(surfaceLeft + surfaceWidth * 0.18)} ${surfaceY + waveA - 2}`,
-    `${Math.round(surfaceCenter - surfaceWidth * 0.18)} ${surfaceY + perspectiveDip}`,
-    `${surfaceCenter} ${surfaceY + perspectiveDip}`,
-    `C${Math.round(surfaceCenter + surfaceWidth * 0.18)} ${surfaceY + perspectiveDip}`,
-    `${Math.round(surfaceRight - surfaceWidth * 0.18)} ${surfaceY + waveB - 2}`,
-    `${surfaceRight} ${surfaceY + waveB}`,
-  ].join(" ");
+  const waterSurface = createPixelWavePath(
+    surfaceLeft,
+    surfaceRight,
+    surfaceY,
+    wavePhase,
+    animatePhysics,
+  );
   const waterBody = [
     waterSurface,
     `L${surfaceRight} 378`,
