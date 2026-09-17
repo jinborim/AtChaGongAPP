@@ -310,6 +310,26 @@ export default function Mypage() {
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
             </TouchableOpacity>
 
+            {/* 음료 도감 */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="음료 도감 열기"
+              onPress={() => router.push("/mypage/beverages")}
+              className={`h-16 flex-row items-center px-5 ${
+                !isGuest ? "border-b-2 border-primary" : ""
+              }`}
+            >
+              <Image
+                source={require("../../assets/images/Encyclopedia.png")}
+                className="absolute left-5 h-[28px] w-[28px]"
+                resizeMode="contain"
+              />
+              <Text className="ml-12 flex-1 font-maru text-md text-primary">
+                음료 도감
+              </Text>
+              <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
+            </Pressable>
+
             {!isGuest && (
               <Pressable
                 className="h-16 flex-row items-center px-5"
