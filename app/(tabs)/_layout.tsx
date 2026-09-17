@@ -1,8 +1,11 @@
 import { useAuth } from "@/src/features/auth";
 import { Tabs } from "expo-router";
+import { useEffect } from "react";
+import { preloadBeverageImages } from "@/src/features/beverages/preloadBeverageImages";
 
 export default function TabLayout() {
   const { isAuthenticated } = useAuth();
+  useEffect(() => { void preloadBeverageImages(); }, []);
 
   return (
     <Tabs

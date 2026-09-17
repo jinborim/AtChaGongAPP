@@ -3,7 +3,8 @@ import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import { useMonthStatistics } from "@/src/features/statistics/hooks/useStatistics";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { ImageBackground, Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import DayDetailModal from "./DayDetailModal";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -43,11 +44,15 @@ export default function MonthStatistics() {
     return "bg-[#4088FD]"; // 5 이상
   };
   return (
-    <ImageBackground
-      source={require("../../assets/images/Background.png")}
-      resizeMode="cover"
-      className="flex-1"
-    >
+    <View className="flex-1">
+      <Image
+        source={require("../../assets/images/Background.png")}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={0}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFillObject}
+      />
       <Header title="집중 기록" />
       <View className="w-full px-7 mt-8">
         {/* 월 이동 */}
@@ -191,6 +196,6 @@ export default function MonthStatistics() {
         }
       />
       <NavigationBar />
-    </ImageBackground>
+    </View>
   );
 }
