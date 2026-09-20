@@ -7,7 +7,7 @@ module.exports = {
   deploymentTarget: "16.2",
   frameworks: ["SwiftUI", "WidgetKit", "ActivityKit"],
   images: {
-    studyingPenguin: "./assets/WidgetStudyingPenguin.png",
+    studyingPenguin: "../../src/assets/images/WidgetStudyingPenguin.png",
   },
   entitlements: {
     "com.apple.security.application-groups": [

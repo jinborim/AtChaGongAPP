@@ -28,7 +28,7 @@ const NAVIGATION_ITEMS: {
   },
   {
     label: "통계",
-    icon: require("../../assets/images/RecordIcon.png"),
+    icon: require("../../assets/images/StatisticsIconV2.png"),
     iconSize: 48,
     iconOffsetY: -2.6,
     href: "/month",

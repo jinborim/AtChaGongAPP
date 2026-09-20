@@ -4,12 +4,31 @@ import type {
   CompleteOnboardingResponse,
   DeleteMeResponse,
   Me,
+  ProfileImageSummary,
   UpdateNicknameRequest,
   UpdateNicknameResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+  UserProfile,
 } from "./types";
 
 export function getMe() {
   return apiClient.request<Me>("/users/me");
+}
+
+export function getUserProfile() {
+  return apiClient.request<UserProfile>("/users/profile");
+}
+
+export function getProfileImages() {
+  return apiClient.request<ProfileImageSummary[]>("/users/profiles");
+}
+
+export function updateUserProfile(request: UpdateProfileRequest) {
+  return apiClient.request<UpdateProfileResponse>("/users/profile", {
+    method: "PATCH",
+    body: request,
+  });
 }
 
 export function updateNickname(request: UpdateNicknameRequest) {

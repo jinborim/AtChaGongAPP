@@ -1,18 +1,33 @@
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Image,
   ScrollView,
   Text,
   View,
   type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import {
   SAMPLE_BEVERAGES,
   getBeverageImageStyle,
   type BeveragePreview,
 } from "@/src/features/beverages/sampleBeverages";
+import {
+  getOwnedBeverages,
+  getSelectedBeverage,
+  selectBeverage,
+  toOwnedBeveragePreview,
+} from "@/src/features/beverages/beverageApi";
 import { useBeverageSwipeHint } from "@/src/features/beverages/useBeverageSwipeHint";
 import PixelSwipeHint from "@/src/components/PixelSwipeHint/PixelSwipeHint";
+import { useFocusEffect } from "expo-router";
 import MeltingLemonAde from "./MeltingLemonAde";
 import MeltingIceCup from "./MeltingIceCup";
 
@@ -24,6 +39,8 @@ type TimerSessionContentProps = {
   phase: TimerSessionPhase;
   focusProgress: number;
   breakProgress: number;
+  persistSelection: boolean;
+  onBeverageChange: (beverageId: number) => void;
 };
 
 const BeverageSlide = memo(function BeverageSlide({
@@ -115,12 +132,66 @@ export default function TimerSessionContent({
   phase,
   focusProgress,
   breakProgress,
+  persistSelection,
+  onBeverageChange,
 }: TimerSessionContentProps) {
   const pager = useRef<ScrollView>(null);
   const selectedIndexRef = useRef(0);
+  const persistedBeverageIdRef = useRef<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [pageWidth, setPageWidth] = useState(0);
-  const beverages = SAMPLE_BEVERAGES;
+  const [beverages, setBeverages] = useState<readonly BeveragePreview[]>([
+    SAMPLE_BEVERAGES[0],
+  ]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void Promise.all([
+        getOwnedBeverages(),
+        getSelectedBeverage().catch(() => null),
+      ])
+        .then(([ownedBeverages, selectedBeverage]) => {
+          if (!isActive) return;
+
+          const selectedIndex = ownedBeverages.findIndex(
+            (beverage) =>
+              beverage.beverageId === selectedBeverage?.beverageId,
+          );
+          const orderedBeverages =
+            selectedIndex > 0
+              ? [
+                  ownedBeverages[selectedIndex],
+                  ...ownedBeverages.slice(0, selectedIndex),
+                  ...ownedBeverages.slice(selectedIndex + 1),
+                ]
+              : ownedBeverages;
+          const nextBeverages = orderedBeverages.map(
+            toOwnedBeveragePreview,
+          );
+          setBeverages(
+            nextBeverages.length > 0 ? nextBeverages : [SAMPLE_BEVERAGES[0]],
+          );
+          const initialBeverageId = Number(
+            nextBeverages[0]?.id ?? SAMPLE_BEVERAGES[0].id,
+          );
+          if (Number.isFinite(initialBeverageId)) {
+            persistedBeverageIdRef.current = initialBeverageId;
+            onBeverageChange(initialBeverageId);
+          }
+          selectedIndexRef.current = 0;
+          setSelectedIndex(0);
+          pager.current?.scrollTo({ x: 0, animated: false });
+        })
+        .catch((error) => {
+          console.log("내 보유 음료 목록 조회 오류:", error);
+        });
+
+      return () => {
+        isActive = false;
+      };
+    }, [onBeverageChange]),
+  );
   const {
     isVisible: isSwipeHintVisible,
     registerInteraction: registerSwipeInteraction,
@@ -128,7 +199,7 @@ export default function TimerSessionContent({
     !isRunning && beverages.length > 1,
     interactionSignal,
   );
-  const selectedBeverage = beverages[selectedIndex];
+  const selectedBeverage = beverages[selectedIndex] ?? beverages[0];
   const progress = Math.min(
     1,
     Math.max(0, phase === "break" ? breakProgress : focusProgress),
@@ -147,6 +218,42 @@ export default function TimerSessionContent({
   const handleLayout = (event: LayoutChangeEvent) => {
     const width = event.nativeEvent.layout.width;
     if (width !== pageWidth) setPageWidth(width);
+  };
+
+  const commitBeverageSelection = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    if (isRunning || pageWidth <= 0) return;
+
+    const index = Math.max(
+      0,
+      Math.min(
+        beverages.length - 1,
+        Math.round(event.nativeEvent.contentOffset.x / pageWidth),
+      ),
+    );
+    const beverageId = Number(beverages[index]?.id);
+    if (!Number.isFinite(beverageId)) return;
+
+    selectedIndexRef.current = index;
+    setSelectedIndex(index);
+    onBeverageChange(beverageId);
+
+    if (
+      !persistSelection ||
+      persistedBeverageIdRef.current === beverageId
+    ) {
+      return;
+    }
+
+    const previousBeverageId = persistedBeverageIdRef.current;
+    persistedBeverageIdRef.current = beverageId;
+    void selectBeverage(beverageId).catch((error) => {
+      if (persistedBeverageIdRef.current === beverageId) {
+        persistedBeverageIdRef.current = previousBeverageId;
+      }
+      console.log("현재 음료 선택 저장 오류:", error);
+    });
   };
 
   return (
@@ -172,6 +279,7 @@ export default function TimerSessionContent({
             directionalLockEnabled
             scrollEventThrottle={16}
             onScrollBeginDrag={registerSwipeInteraction}
+            onMomentumScrollEnd={commitBeverageSelection}
             onContentSizeChange={() => {
               pager.current?.scrollTo({
                 x: selectedIndexRef.current * pageWidth,

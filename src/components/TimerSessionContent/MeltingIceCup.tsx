@@ -20,7 +20,9 @@ const VIEWBOX_HEIGHT = 432;
 const ICE_ATLAS_WIDTH = 1448;
 const ICE_ATLAS_HEIGHT = 1086;
 const INITIAL_SURFACE_Y = 374;
-const FINAL_SURFACE_Y = 176;
+// IceCupWaterFlat.png의 실제 수면 시작점에 맞춰 코드로 그리는 웨이브가
+// PNG 수면보다 위로 떠 보이지 않게 한다.
+const FINAL_SURFACE_Y = 192;
 const CUP_INTERIOR =
   "M40 78 Q162 104 284 78 L260 372 Q162 410 64 372 Z";
 const CUP_OPENING = "M40 78 Q162 22 284 78 Q162 108 40 78 Z";

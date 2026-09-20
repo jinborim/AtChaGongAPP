@@ -1,5 +1,7 @@
 // 메인 홈 퍼블리싱 화면
 import CustomModal from "@/src/components/Modal/CustomModal";
+import CoinRewardModal from "@/src/components/Modal/CoinRewardModal";
+import CoinBalance from "@/src/components/CoinBalance";
 import TimerProgressBar from "@/src/components/TimerProgressBar";
 import TimerSessionContent, {
   type TimerSessionPhase,
@@ -9,6 +11,12 @@ import {
   getTimerSettings,
 } from "@/src/features/timer";
 import { useAuth } from "@/src/features/auth";
+import {
+  getSeoulDateKey,
+  MOCK_ATTENDANCE_DAY,
+  MOCK_ATTENDANCE_DATE_STORAGE_KEY,
+  MOCK_COIN_BALANCE,
+} from "@/src/constants/coin";
 import {
   clearActiveTimerSession,
   getActiveTimerSession,
@@ -30,6 +38,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import {
+  BREAK_MINUTES,
   DEFAULT_BEVERAGE_ID,
   DEFAULT_CYCLE_COUNT,
   DEFAULT_FOCUS_MINUTES,
@@ -38,8 +47,10 @@ import {
   MIN_CYCLE_COUNT,
 } from "../../constants/timer";
 import {
+  normalizeBreakMinutes,
   normalizeCycleCount,
   normalizeFocusMinutes,
+  parseStoredBreakMinutes,
   parseStoredCycleCount,
   parseStoredFocusMinutes,
 } from "../../utils/timerSettings";
@@ -52,6 +63,9 @@ export default function StudyScreen() {
   const [initialSession] = useState(() => getActiveTimerSession());
   const [focusMinutes, setFocusMinutes] = useState(
     initialSession?.focusMinutes ?? DEFAULT_FOCUS_MINUTES,
+  );
+  const [breakMinutes, setBreakMinutes] = useState(
+    initialSession?.breakMinutes ?? BREAK_MINUTES,
   );
   const [remainingMilliseconds, setRemainingMilliseconds] = useState(() =>
     initialSession
@@ -66,8 +80,12 @@ export default function StudyScreen() {
     initialSession?.endTime ?? null,
   );
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [interactionSignal, setInteractionSignal] = useState(0);
+  const [selectedBeverageId, setSelectedBeverageId] = useState(
+    initialSession?.beverageId ?? DEFAULT_BEVERAGE_ID,
+  );
   const [cycleCount, setCycleCount] = useState(
     initialSession?.cycleCount ?? DEFAULT_CYCLE_COUNT,
   );
@@ -83,6 +101,9 @@ export default function StudyScreen() {
   const isMountedRef = useRef(true);
   const timerStartedAtRef = useRef<string | null>(
     initialSession?.startedAt ?? null,
+  );
+  const focusBeverageIdRef = useRef(
+    initialSession?.beverageId ?? DEFAULT_BEVERAGE_ID,
   );
   const settingsHandleTranslateX = useRef(new Animated.Value(0)).current;
   const settingsHandlePanResponder = useMemo(
@@ -135,6 +156,35 @@ export default function StudyScreen() {
     isRunningRef.current = isRunning;
   }, [isRunning]);
 
+  useEffect(() => {
+    if (isGuest) {
+      setShowAttendanceModal(false);
+      return;
+    }
+
+    let isActive = true;
+
+    const showFirstAttendanceRewardOfDay = async () => {
+      const today = getSeoulDateKey();
+      const rewardedDate = await AsyncStorage.getItem(
+        MOCK_ATTENDANCE_DATE_STORAGE_KEY,
+      );
+
+      if (!isActive || rewardedDate === today) return;
+
+      await AsyncStorage.setItem(MOCK_ATTENDANCE_DATE_STORAGE_KEY, today);
+      if (isActive) setShowAttendanceModal(true);
+    };
+
+    showFirstAttendanceRewardOfDay().catch((error) =>
+      console.log("출석 보상 목업 확인 오류:", error),
+    );
+
+    return () => {
+      isActive = false;
+    };
+  }, [isGuest]);
+
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -142,11 +192,13 @@ export default function StudyScreen() {
       setIsSettingsLoaded(false);
 
       const loadTimerSettings = async () => {
-        const [savedFocusMinutes, savedCycleCount] = await Promise.all([
+        const [savedFocusMinutes, savedBreakMinutes, savedCycleCount] = await Promise.all([
           AsyncStorage.getItem("focusMinutes"),
+          AsyncStorage.getItem("breakMinutes"),
           AsyncStorage.getItem("cycleCount"),
         ]);
         const minutes = parseStoredFocusMinutes(savedFocusMinutes);
+        const breaks = parseStoredBreakMinutes(savedBreakMinutes);
         const cycles = parseStoredCycleCount(savedCycleCount);
         const duration = getFocusDurationMilliseconds(minutes);
         await AsyncStorage.multiRemove(["currentCycle", "autoStartFocus"]);
@@ -155,6 +207,7 @@ export default function StudyScreen() {
 
         if (!isRunningRef.current) {
           setFocusMinutes(minutes);
+          setBreakMinutes(breaks);
           setCycleCount(cycles);
           setCurrentCycle(MIN_CYCLE_COUNT);
           setTimerPhase("focus");
@@ -179,6 +232,9 @@ export default function StudyScreen() {
           const serverCycleCount = normalizeCycleCount(
             timerSettings.cycleCount,
           );
+          const serverBreakMinutes = normalizeBreakMinutes(
+            timerSettings.breakMinutes,
+          );
           const serverDuration =
             getFocusDurationMilliseconds(serverFocusMinutes);
 
@@ -186,6 +242,7 @@ export default function StudyScreen() {
 
           if (!isRunningRef.current) {
             setFocusMinutes(serverFocusMinutes);
+            setBreakMinutes(serverBreakMinutes);
             setCycleCount(serverCycleCount);
             setCurrentCycle((previous) => Math.min(serverCycleCount, previous));
             setRemainingMilliseconds(serverDuration);
@@ -193,6 +250,7 @@ export default function StudyScreen() {
 
           await Promise.all([
             AsyncStorage.setItem("focusMinutes", String(serverFocusMinutes)),
+            AsyncStorage.setItem("breakMinutes", String(serverBreakMinutes)),
             AsyncStorage.setItem("cycleCount", String(serverCycleCount)),
           ]);
         } catch (error) {
@@ -224,7 +282,7 @@ export default function StudyScreen() {
       const completedAt = new Date().toISOString();
 
       await completeFocusRecord({
-        beverageId: DEFAULT_BEVERAGE_ID,
+        beverageId: focusBeverageIdRef.current,
         focusMinutes,
         focusedSeconds: focusMinutes * 60 * completedCycleCount,
         startedAt: timerStartedAtRef.current ?? completedAt,
@@ -248,7 +306,7 @@ export default function StudyScreen() {
       while (now >= nextEndTime) {
         if (nextPhase === "focus") {
           nextPhase = "break";
-          nextEndTime += getBreakDurationMilliseconds();
+          nextEndTime += getBreakDurationMilliseconds(breakMinutes);
           continue;
         }
 
@@ -276,17 +334,20 @@ export default function StudyScreen() {
       setEndTime(nextEndTime);
       setRemainingMilliseconds(nextEndTime - now);
       setActiveTimerSession({
+        beverageId: focusBeverageIdRef.current,
         phase: nextPhase,
         endTime: nextEndTime,
         currentCycle: nextCycle,
         cycleCount,
         focusMinutes,
+        breakMinutes,
         startedAt: timerStartedAtRef.current ?? new Date(now).toISOString(),
       });
     }, 50);
 
     return () => clearInterval(timer);
   }, [
+    breakMinutes,
     currentCycle,
     cycleCount,
     endTime,
@@ -306,7 +367,7 @@ export default function StudyScreen() {
       )}:${String(centiseconds).padStart(2, "0")}`
     : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   const focusDurationMilliseconds = getFocusDurationMilliseconds(focusMinutes);
-  const breakDurationMilliseconds = getBreakDurationMilliseconds();
+  const breakDurationMilliseconds = getBreakDurationMilliseconds(breakMinutes);
   const timerProgress =
     timerPhase === "focus"
       ? focusDurationMilliseconds === 0
@@ -331,12 +392,15 @@ export default function StudyScreen() {
     const startedAt = new Date().toISOString();
     const nextEndTime = Date.now() + remainingMilliseconds;
     timerStartedAtRef.current = startedAt;
+    focusBeverageIdRef.current = selectedBeverageId;
     setActiveTimerSession({
+      beverageId: focusBeverageIdRef.current,
       phase: "focus",
       endTime: nextEndTime,
       currentCycle,
       cycleCount,
       focusMinutes,
+      breakMinutes,
       startedAt,
     });
     setEndTime(nextEndTime);
@@ -376,7 +440,14 @@ export default function StudyScreen() {
         className="flex-1 items-center"
         onTouchStart={() => setInteractionSignal((current) => current + 1)}
       >
-        <View className="mt-10 h-[120px] w-full items-center justify-center">
+        <View className="h-12 w-full flex-row items-center justify-end px-4">
+          <CoinBalance
+            balance={isGuest ? 0 : MOCK_COIN_BALANCE}
+            compact
+            onPress={() => router.push("/store")}
+          />
+        </View>
+        <View className="h-[120px] w-full items-center justify-center">
           {isRunning ? (
             <View className="h-[120px] w-[80%] justify-center">
               <TimerProgressBar
@@ -452,6 +523,8 @@ export default function StudyScreen() {
           phase={timerPhase}
           focusProgress={timerPhase === "focus" ? timerProgress : 0}
           breakProgress={timerPhase === "break" ? timerProgress : 0}
+          persistSelection={!isGuest}
+          onBeverageChange={setSelectedBeverageId}
         />
 
         <TouchableOpacity
@@ -499,8 +572,9 @@ export default function StudyScreen() {
           cancelText="취소"
         />
 
-        <CustomModal
-          visible={showCompleteModal}
+        {isGuest ? (
+          <CustomModal
+          visible={showCompleteModal && isGuest}
           onClose={() => {
             closeCompleteModal().catch((error) =>
               console.log("완료 모달 닫기 오류:", error),
@@ -526,6 +600,26 @@ export default function StudyScreen() {
           buttonCount={isGuest ? 2 : 1}
           confirmText={isGuest ? "로그인하기" : "확인"}
           cancelText="확인"
+          />
+        ) : (
+          <CoinRewardModal
+            visible={showCompleteModal}
+            variant="focus"
+            balance={MOCK_COIN_BALANCE}
+            completedCycleCount={cycleCount}
+            onClose={() => {
+              closeCompleteModal().catch((error) =>
+                console.log("완료 모달 닫기 오류:", error),
+              );
+            }}
+          />
+        )}
+        <CoinRewardModal
+          visible={showAttendanceModal}
+          variant="attendance"
+          attendanceDay={MOCK_ATTENDANCE_DAY}
+          balance={MOCK_COIN_BALANCE}
+          onClose={() => setShowAttendanceModal(false)}
         />
       </SafeAreaView>
       <NavigationBar />

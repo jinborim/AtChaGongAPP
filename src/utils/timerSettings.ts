@@ -1,6 +1,7 @@
 import {
   DEFAULT_CYCLE_COUNT,
   DEFAULT_FOCUS_MINUTES,
+  BREAK_MINUTES,
   MAX_CYCLE_COUNT,
   MAX_FOCUS_MINUTES,
   MIN_CYCLE_COUNT,
@@ -34,6 +35,12 @@ export const normalizeCycleCount = (value: number) => {
   if (!Number.isFinite(value)) return DEFAULT_CYCLE_COUNT;
 
   return Math.round(clamp(value, MIN_CYCLE_COUNT, MAX_CYCLE_COUNT));
+};
+
+export const normalizeBreakMinutes = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0) return BREAK_MINUTES;
+
+  return value;
 };
 
 export const normalizeCurrentCycle = (value: number) => {
@@ -71,6 +78,12 @@ export const parseStoredCycleCount = (value: string | null) =>
       MAX_CYCLE_COUNT,
     ),
   );
+
+export const parseStoredBreakMinutes = (value: string | null) => {
+  if (value === null || value.trim() === "") return BREAK_MINUTES;
+
+  return normalizeBreakMinutes(Number(value));
+};
 
 export const parseStoredCurrentCycle = (value: string | null) =>
   normalizeCurrentCycle(

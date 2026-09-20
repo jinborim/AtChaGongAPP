@@ -3,11 +3,21 @@ import {
   getBeverageImageStyle,
   type BeveragePreview,
 } from "@/src/features/beverages/sampleBeverages";
-import { useRouter } from "expo-router";
+import {
+  getOwnedBeverages,
+  toOwnedBeveragePreview,
+} from "@/src/features/beverages/beverageApi";
+import { useFocusEffect, useRouter } from "expo-router";
 import PixelBook from "@/src/components/PixelBook/PixelBook";
 import Image from "@/src/components/CachedImage/CachedImage";
 import { preloadBeverageImages } from "@/src/features/beverages/preloadBeverageImages";
-import { useEffect, useState, type PropsWithChildren } from "react";
+import { useAuth } from "@/src/features/auth";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type PropsWithChildren,
+} from "react";
 import {
   Modal,
   Pressable,
@@ -108,11 +118,47 @@ function BeverageArt({
 
 export default function BeverageCollection() {
   const router = useRouter();
+  const { isGuest } = useAuth();
   useEffect(() => { void preloadBeverageImages(); }, []);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [page, setPage] = useState(0);
-  const beverages = SAMPLE_BEVERAGES;
-  const pageCount = Math.ceil(beverages.length / 2);
+  const [beverages, setBeverages] = useState<BeveragePreview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const loadOwnedBeverages = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+
+    if (isGuest) {
+      setBeverages([SAMPLE_BEVERAGES[0]]);
+      setPage(0);
+      setSelectedIndex(null);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const ownedBeverages = await getOwnedBeverages();
+      setBeverages(ownedBeverages.map(toOwnedBeveragePreview));
+      setPage(0);
+      setSelectedIndex(null);
+    } catch (error) {
+      console.log("내 보유 음료 목록 조회 오류:", error);
+      setBeverages([SAMPLE_BEVERAGES[0]]);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isGuest]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadOwnedBeverages();
+    }, [loadOwnedBeverages]),
+  );
+
+  const pageCount = Math.max(1, Math.ceil(beverages.length / 2));
   const pageBeverages = beverages.slice(page * 2, page * 2 + 2);
   const selected = selectedIndex === null ? null : beverages[selectedIndex];
   const closeDetails = () => setSelectedIndex(null);
@@ -153,6 +199,29 @@ export default function BeverageCollection() {
             <Text style={styles.sectionHint}>음료를 눌러 도감 기록을 펼쳐보세요</Text>
             <View style={styles.paperRule} />
 
+        {isLoading ? (
+          <View style={styles.statusPanel}>
+            <Text style={styles.statusText}>보유 음료를 불러오고 있어요</Text>
+          </View>
+        ) : beverages.length === 0 ? (
+          <View style={styles.statusPanel}>
+            <Text style={styles.statusText}>아직 보유한 음료가 없어요</Text>
+          </View>
+        ) : (
+        <>
+        {loadError && (
+          <View style={styles.errorNotice}>
+            <Text style={styles.statusText}>보유 목록을 불러오지 못해 기본 음료만 표시해요</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="보유 음료 목록 다시 불러오기"
+              onPress={() => void loadOwnedBeverages()}
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryButtonText}>다시 불러오기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.grid}>
           {pageBeverages.map((beverage, slot) => {
             const index = page * 2 + slot;
@@ -192,10 +261,13 @@ export default function BeverageCollection() {
             </TouchableOpacity>
           );})}
         </View>
+        </>
+        )}
             <View style={styles.albumNote}>
               <PixelIcon kind="sparkle" size={12} />
               <Text style={styles.albumNoteText}>좋아하는 음료를 모아 나만의 도감을 채워보세요.</Text>
             </View>
+            {beverages.length > 0 && (
             <View style={styles.pageNavigation}>
               <TouchableOpacity
                 accessibilityRole="button" accessibilityLabel="이전 도감 페이지"
@@ -213,6 +285,7 @@ export default function BeverageCollection() {
                 style={[styles.pageButton, page === pageCount - 1 && styles.pageButtonDisabled]}
               ><View style={{ transform: [{ rotate: "180deg" }] }}><PixelIcon kind="back" size={18} /></View></TouchableOpacity>
             </View>
+            )}
         </PixelBook>
 
       </ScrollView>
@@ -263,7 +336,7 @@ export default function BeverageCollection() {
                   </View>
                   <Text style={styles.detailName}>{selected.name}</Text>
                   <Text style={styles.detailDescription}>
-                    {DESCRIPTIONS[selected.id]}
+                    {DESCRIPTIONS[selected.templateId ?? selected.id]}
                   </Text>
                   <View style={styles.detailNote}>
                     <Text style={styles.detailNoteText}>
@@ -411,6 +484,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontFamily: "Mulmaru", fontSize: 20, color: INK },
   sectionHint: { fontFamily: "Mulmaru", fontSize: 11, lineHeight: 17, color: "#8E8068", marginTop: 8, textAlign: "center" },
+  statusPanel: { minHeight: 300, alignItems: "center", justifyContent: "center", gap: 16 },
+  errorNotice: { alignItems: "center", justifyContent: "center", gap: 12, paddingBottom: 18 },
+  statusText: { fontFamily: "Mulmaru", fontSize: 14, color: "#8E8068", textAlign: "center" },
+  retryButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: 18, backgroundColor: INK, borderWidth: 2, borderColor: "#102744" },
+  retryButtonText: { fontFamily: "Mulmaru", fontSize: 14, color: "#FFFFFF" },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",

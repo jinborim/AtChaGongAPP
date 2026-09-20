@@ -1,15 +1,20 @@
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import CustomModal from "@/src/components/Modal/CustomModal";
 import Image from "@/src/components/CachedImage/CachedImage";
-import { useState } from "react";
 import {
-  SAMPLE_BEVERAGES,
   BEVERAGE_CATEGORIES,
+  findBeveragePreviewTemplate,
   type BeverageCategory,
   getBeverageImageStyle,
   type BeveragePreview,
 } from "@/src/features/beverages/sampleBeverages";
-import { useRouter } from "expo-router";
+import {
+  getSaleBeverages,
+  getOwnedBeverages,
+  type SaleBeverage,
+} from "@/src/features/beverages/beverageApi";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -21,12 +26,31 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const INK = "#18335E";
 const ACCENTS = ["#DCEEFF", "#FFF3BD", "#FFE1D9", "#E5F4CF"];
-// 화면 구성 확인용 예시 가격입니다. 실제 구매/보유 데이터와 연결하지 않습니다.
-const PREVIEW_COINS: Record<string, number> = {
-  "preview-lemonade": 100,
-  "preview-grapefruit-ade": 100,
-  "preview-green-grape-ade": 100,
+
+type StoreBeverage = BeveragePreview & {
+  beverageId: number;
+  price: number;
+  saleEndsAt: string | null;
 };
+
+function toStoreBeverage(
+  beverage: SaleBeverage,
+  ownedBeverageIds: ReadonlySet<number>,
+): StoreBeverage {
+  const preview = findBeveragePreviewTemplate(beverage);
+  const price = typeof beverage.price === "number" ? beverage.price : 0;
+
+  return {
+    ...preview,
+    id: String(beverage.beverageId),
+    beverageId: beverage.beverageId,
+    name: beverage.name,
+    isOwned: price === 0 || ownedBeverageIds.has(beverage.beverageId),
+    isLimited: beverage.isLimited === true,
+    price,
+    saleEndsAt: beverage.saleEndsAt ?? null,
+  };
+}
 
 function DrinkImage({ beverage }: { beverage: BeveragePreview }) {
   return (
@@ -60,9 +84,50 @@ function DrinkImage({ beverage }: { beverage: BeveragePreview }) {
 
 export default function BeverageStore() {
   const router = useRouter();
-  const [purchaseBeverage, setPurchaseBeverage] = useState<BeveragePreview | null>(null);
+  const [purchaseBeverage, setPurchaseBeverage] = useState<StoreBeverage | null>(null);
   const [category, setCategory] = useState<BeverageCategory>("all");
-  const products = SAMPLE_BEVERAGES.filter((beverage) =>
+  const [saleBeverages, setSaleBeverages] = useState<StoreBeverage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const loadSaleBeverages = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+
+    try {
+      const beverages = await getSaleBeverages();
+      let ownedBeverageIds = new Set<number>();
+
+      try {
+        const ownedBeverages = await getOwnedBeverages();
+        ownedBeverageIds = new Set(
+          ownedBeverages.map((beverage) => beverage.beverageId),
+        );
+      } catch (error) {
+        console.log("판매 음료 보유 여부 조회 오류:", error);
+      }
+
+      setSaleBeverages(
+        beverages.map((beverage) =>
+          toStoreBeverage(beverage, ownedBeverageIds),
+        ),
+      );
+    } catch (error) {
+      console.log("판매 음료 목록 조회 오류:", error);
+      setSaleBeverages([]);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadSaleBeverages();
+    }, [loadSaleBeverages]),
+  );
+
+  const products = saleBeverages.filter((beverage) =>
     category === "all" || (category === "limited" ? beverage.isLimited : beverage.category === category),
   );
   const productRows = Array.from(
@@ -146,6 +211,24 @@ export default function BeverageStore() {
               <Text style={styles.categorySummaryText}>{BEVERAGE_CATEGORIES.find((item) => item.id === category)?.name} 음료</Text>
               <Text style={styles.categorySummaryText}>{products.length}종</Text>
             </View>
+            {isLoading ? (
+              <View style={styles.statusPanel}>
+                <Text style={styles.statusTitle}>판매 음료를 불러오고 있어요</Text>
+              </View>
+            ) : loadError ? (
+              <View style={styles.statusPanel}>
+                <Text style={styles.statusTitle}>음료 목록을 불러오지 못했어요</Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="판매 음료 목록 다시 불러오기"
+                  onPress={() => void loadSaleBeverages()}
+                  activeOpacity={0.7}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryButtonText}>다시 불러오기</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
             <View style={styles.productGrid}>
               {productRows.map((row) => (
                 <View key={row[0].id} style={styles.productRow}>
@@ -161,7 +244,7 @@ export default function BeverageStore() {
                           {
                             backgroundColor:
                               ACCENTS[
-                                SAMPLE_BEVERAGES.indexOf(beverage) % ACCENTS.length
+                                Math.max(0, beverage.beverageId - 1) % ACCENTS.length
                               ],
                           },
                         ]}
@@ -175,7 +258,7 @@ export default function BeverageStore() {
                       ) : (
                       <TouchableOpacity
                         accessibilityRole="button"
-                        accessibilityLabel={`${beverage.name}, ${PREVIEW_COINS[beverage.id].toLocaleString("ko-KR")} 코인, 구매`}
+                        accessibilityLabel={`${beverage.name}, ${beverage.price.toLocaleString("ko-KR")} 코인, 구매`}
                         onPress={() => setPurchaseBeverage(beverage)}
                         activeOpacity={0.7}
                         style={styles.purchaseButton}
@@ -197,7 +280,7 @@ export default function BeverageStore() {
                             accessible={false}
                           />
                         <Text style={[styles.priceText, styles.purchaseButtonText]}>
-                          {`${PREVIEW_COINS[beverage.id].toLocaleString("ko-KR")} 코인`}
+                          {`${beverage.price.toLocaleString("ko-KR")} 코인`}
                         </Text>
                           </View>
                       </TouchableOpacity>
@@ -215,13 +298,16 @@ export default function BeverageStore() {
                 </View>
               ))}
             </View>
-            {products.length === 0 && (
+            )}
+            {!isLoading && !loadError && products.length === 0 && (
               <View style={styles.emptyCategory}>
                 <Text style={styles.emptyCategoryTitle}>아직 등록된 음료가 없어요</Text>
                 <Text style={styles.emptyCategoryHint}>새로운 한정판 음료를 기다려 주세요.</Text>
               </View>
             )}
-            <Text style={styles.comingSoonText}>판매 준비 중</Text>
+            {!isLoading && !loadError && (
+              <Text style={styles.comingSoonText}>현재 판매 중인 음료</Text>
+            )}
           </View>
 
           <View style={styles.collectionSection}>
@@ -273,6 +359,10 @@ const styles = StyleSheet.create({
   emptyCategory: { minHeight: 200, alignItems: "center", justifyContent: "center", padding: 16, gap: 10 },
   emptyCategoryTitle: { fontFamily: "Mulmaru", fontSize: 16, color: INK, textAlign: "center" },
   emptyCategoryHint: { fontFamily: "Mulmaru", fontSize: 12, color: "#6C8097", textAlign: "center" },
+  statusPanel: { minHeight: 200, alignItems: "center", justifyContent: "center", padding: 20, gap: 16 },
+  statusTitle: { fontFamily: "Mulmaru", fontSize: 14, color: "#6C8097", textAlign: "center" },
+  retryButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: 18, backgroundColor: INK, borderWidth: 2, borderColor: "#102744" },
+  retryButtonText: { fontFamily: "Mulmaru", fontSize: 14, color: "#FFFFFF" },
   screen: { flex: 1, backgroundColor: "#E8F3FC" },
   header: { alignItems: "center", paddingTop: 16, paddingBottom: 10 },
   headerTitle: { fontFamily: "Mulmaru", fontSize: 28, color: INK },

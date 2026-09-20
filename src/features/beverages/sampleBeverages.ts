@@ -10,6 +10,7 @@ export type BeverageCategory = (typeof BEVERAGE_CATEGORIES)[number]["id"];
 
 export type BeveragePreview = {
   id: string;
+  templateId?: string;
   name: string;
   category: Exclude<BeverageCategory, "all" | "limited">;
   isOwned: boolean;
@@ -50,7 +51,7 @@ export const SAMPLE_BEVERAGES: readonly BeveragePreview[] = [
     iceCupLayers: {
       glass: require("../../assets/images/IceCupGlassPixel.png"),
       ice: require("../../assets/images/AdeIceAtlas.png"),
-      water: require("../../assets/images/IceCupWater.png"),
+      water: require("../../assets/images/IceCupWaterFlat.png"),
     },
   },
   {
@@ -96,6 +97,33 @@ export const SAMPLE_BEVERAGES: readonly BeveragePreview[] = [
     },
   },
 ];
+
+export type BeverageIdentity = {
+  beverageId: number;
+  name: string;
+  imgUrl: string;
+};
+
+export function findBeveragePreviewTemplate(beverage: BeverageIdentity) {
+  const identity = `${beverage.name} ${beverage.imgUrl}`
+    .replace(/[\s_-]/g, "")
+    .toLowerCase();
+
+  if (identity.includes("청포도") || identity.includes("greengrape")) {
+    return SAMPLE_BEVERAGES[3];
+  }
+  if (identity.includes("자몽") || identity.includes("grapefruit")) {
+    return SAMPLE_BEVERAGES[2];
+  }
+  if (identity.includes("레몬") || identity.includes("lemon")) {
+    return SAMPLE_BEVERAGES[1];
+  }
+  if (identity.includes("얼음") || identity.includes("icecup")) {
+    return SAMPLE_BEVERAGES[0];
+  }
+
+  return SAMPLE_BEVERAGES[beverage.beverageId - 1] ?? SAMPLE_BEVERAGES[0];
+}
 
 export function getBeverageImageStyle(beverage: BeveragePreview) {
   return {

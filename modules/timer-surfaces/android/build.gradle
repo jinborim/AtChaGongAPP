@@ -6,10 +6,28 @@ plugins {
 group = 'expo.modules.timersurfaces'
 version = '1.0.0'
 
+def widgetImageSource = file('../../../src/assets/images/WidgetStudyingPenguin.png')
+def generatedWidgetResourcesDir = layout.buildDirectory.dir('generated/widget-resources')
+def prepareTimerWidgetResources = tasks.register('prepareTimerWidgetResources', Copy) {
+  inputs.file(widgetImageSource)
+  from(widgetImageSource)
+  into(generatedWidgetResourcesDir.map { it.dir('drawable-nodpi') })
+  rename { 'widget_studying_penguin.png' }
+}
+
 android {
   namespace 'expo.modules.timersurfaces'
   defaultConfig {
     versionCode 1
     versionName '1.0.0'
+  }
+  sourceSets {
+    main.res.srcDir(generatedWidgetResourcesDir)
+  }
+}
+
+tasks.configureEach { task ->
+  if (task.name.startsWith('merge') && task.name.endsWith('Resources')) {
+    task.dependsOn(prepareTimerWidgetResources)
   }
 }

@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
 type Props = {
   visible: boolean;
   selectedId: ProfileImageId;
+  availableProfileIds: readonly number[];
   saving: boolean;
   onSelect: (id: ProfileImageId) => void;
   onClose: () => void;
@@ -12,8 +13,21 @@ type Props = {
 };
 
 export default function ProfileImageModal({
-  visible, selectedId, saving, onSelect, onClose, onConfirm,
+  visible,
+  selectedId,
+  availableProfileIds,
+  saving,
+  onSelect,
+  onClose,
+  onConfirm,
 }: Props) {
+  const availableProfileImages = PROFILE_IMAGES.filter((item) =>
+    availableProfileIds.includes(item.profileId),
+  );
+  const canConfirm = availableProfileImages.some(
+    (item) => item.id === selectedId,
+  );
+
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 items-center justify-center bg-black/50">
@@ -33,7 +47,7 @@ export default function ProfileImageModal({
           <Text className="mt-2 mb-5 text-center font-maru text-sm text-primary">나를 표현할 친구를 골라주세요.</Text>
           <ScrollView contentContainerStyle={{ paddingBottom: 4 }}>
             <View className="flex-row flex-wrap justify-between">
-              {PROFILE_IMAGES.map((item) => {
+              {availableProfileImages.map((item) => {
                 const selected = selectedId === item.id;
                 return (
                   <Pressable
@@ -56,13 +70,18 @@ export default function ProfileImageModal({
                   </Pressable>
                 );
               })}
+              {availableProfileImages.length === 0 && (
+                <Text className="w-full py-8 text-center font-maru text-sm text-primary">
+                  선택할 수 있는 프로필 이미지가 없습니다.
+                </Text>
+              )}
             </View>
           </ScrollView>
           <View className="mt-3 flex-row gap-x-3">
             <Pressable accessibilityRole="button" disabled={saving} onPress={onClose} className="h-12 flex-1 items-center justify-center rounded-[12px] bg-gray-100">
               <Text className="font-maru text-sm text-primary">취소</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={onConfirm} className="h-12 flex-1 items-center justify-center rounded-[12px] bg-primary" style={{ opacity: saving ? 0.5 : 1 }}>
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving || !canConfirm }} disabled={saving || !canConfirm} onPress={onConfirm} className="h-12 flex-1 items-center justify-center rounded-[12px] bg-primary" style={{ opacity: saving || !canConfirm ? 0.5 : 1 }}>
               <Text className="font-maru text-sm text-white">{saving ? "저장 중" : "변경하기"}</Text>
             </Pressable>
           </View>

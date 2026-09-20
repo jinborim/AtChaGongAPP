@@ -6,7 +6,7 @@ const shellAssets = [
   require("../../assets/images/Background.png"),
   require("../../assets/images/HomeIcon.png"),
   require("../../assets/images/Store.png"),
-  require("../../assets/images/RecordIcon.png"),
+  require("../../assets/images/StatisticsIconV2.png"),
   require("../../assets/images/UserIcon.png"),
 ] as const;
 
