@@ -1,5 +1,6 @@
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import CustomModal from "@/src/components/Modal/CustomModal";
+import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
 import Image from "@/src/components/CachedImage/CachedImage";
 import {
   BEVERAGE_CATEGORIES,
@@ -99,6 +100,8 @@ export default function BeverageStore() {
   const { isAuthenticated } = useAuth();
   const [purchaseTarget, setPurchaseTarget] = useState<StoreBeverage | null>(null);
   const [purchaseNotice, setPurchaseNotice] = useState<PurchaseNotice | null>(null);
+  const [isPurchaseLoginPromptOpen, setIsPurchaseLoginPromptOpen] =
+    useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [category, setCategory] = useState<BeverageCategory>("all");
   const [saleBeverages, setSaleBeverages] = useState<StoreBeverage[]>([]);
@@ -168,10 +171,7 @@ export default function BeverageStore() {
 
     if (!isAuthenticated) {
       setPurchaseTarget(null);
-      Alert.alert("로그인이 필요해요", "음료를 구매하려면 로그인해 주세요.", [
-        { text: "취소", style: "cancel" },
-        { text: "로그인", onPress: () => router.push("/login") },
-      ]);
+      setIsPurchaseLoginPromptOpen(true);
       return;
     }
 
@@ -229,7 +229,7 @@ export default function BeverageStore() {
     } finally {
       setIsPurchasing(false);
     }
-  }, [isAuthenticated, isPurchasing, purchaseTarget, router]);
+  }, [isAuthenticated, isPurchasing, purchaseTarget]);
 
   const products = saleBeverages.filter((beverage) =>
     category === "all" || (category === "limited" ? beverage.isLimited : beverage.category === category),
@@ -376,7 +376,14 @@ export default function BeverageStore() {
                       <TouchableOpacity
                         accessibilityRole="button"
                         accessibilityLabel={`${beverage.name}, ${beverage.price.toLocaleString("ko-KR")} 코인, 구매`}
-                        onPress={() => setPurchaseTarget(beverage)}
+                        onPress={() => {
+                          if (!isAuthenticated) {
+                            setIsPurchaseLoginPromptOpen(true);
+                            return;
+                          }
+
+                          setPurchaseTarget(beverage);
+                        }}
                         activeOpacity={0.7}
                         style={styles.purchaseButton}
                       >
@@ -477,6 +484,11 @@ export default function BeverageStore() {
         imageSource={purchaseNotice?.imageSource}
         buttonCount={1}
         confirmText="확인"
+      />
+      <LoginRequiredModal
+        visible={isPurchaseLoginPromptOpen}
+        description="음료를 구매하려면 로그인해 주세요."
+        onClose={() => setIsPurchaseLoginPromptOpen(false)}
       />
     </SafeAreaView>
   );
