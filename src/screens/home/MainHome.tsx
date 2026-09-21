@@ -5,6 +5,12 @@ import TimerSessionContent, {
   type TimerSessionPhase,
 } from "@/src/components/TimerSessionContent";
 import {
+  cancelTimerNotifications,
+  clearTimerNotificationIds,
+  requestTimerNotificationPermission,
+  scheduleTimerNotifications,
+} from "@/src/features/notifications";
+import {
   completeFocusRecord,
   getTimerSettings,
   updateTimerSettings,
@@ -80,6 +86,7 @@ export default function StudyScreen() {
     isGuest ? "게스트" : user?.nickname || DEFAULT_NICKNAME,
   );
   const isRunningRef = useRef(isRunning);
+  const isStartingRef = useRef(false);
   const timerStartedAtRef = useRef<string | null>(
     initialSession?.startedAt ?? null,
   );
@@ -260,6 +267,9 @@ export default function StudyScreen() {
         if (nextCycle >= cycleCount) {
           clearInterval(timer);
           clearActiveTimerSession();
+          clearTimerNotificationIds().catch((error) =>
+            console.warn("타이머 알림 ID 정리 실패:", error),
+          );
           setRemainingMilliseconds(0);
           setEndTime(null);
           setIsRunning(false);
@@ -323,43 +333,103 @@ export default function StudyScreen() {
     isRunning && (timerPhase === "focus" || timerPhase === "break");
 
   const startTimer = async () => {
-    if (!isSettingsLoaded || isRunning || remainingMilliseconds === 0) return;
-
-    setIsRunning(true);
-    setTimerPhase("focus");
-    const startedAt = new Date().toISOString();
-    const nextEndTime = Date.now() + remainingMilliseconds;
-    timerStartedAtRef.current = startedAt;
-    if (TIMER_QA_MODE && !isGuest) {
-      updateTimerSettings({
-        beverageId: DEFAULT_BEVERAGE_ID,
-        focusMinutes: DEFAULT_FOCUS_MINUTES,
-        breakMinutes: BREAK_MINUTES,
-        cycleCount: MAX_CYCLE_COUNT,
-      }).catch((error) => console.log("QA 타이머 설정 전송 오류:", error));
+    if (
+      !isSettingsLoaded ||
+      isRunning ||
+      isStartingRef.current ||
+      remainingMilliseconds === 0
+    ) {
+      return;
     }
-    setActiveTimerSession({
-      phase: "focus",
-      endTime: nextEndTime,
-      currentCycle,
-      cycleCount,
-      focusMinutes,
-      startedAt,
-    });
-    setEndTime(nextEndTime);
+
+    isStartingRef.current = true;
+
+    try {
+      let hasNotificationPermission = false;
+
+      if (!isGuest) {
+        try {
+          hasNotificationPermission =
+            await requestTimerNotificationPermission();
+        } catch (error) {
+          console.warn("타이머 알림 권한 요청 실패:", error);
+        }
+      }
+
+      const startTime = Date.now();
+      const startedAt = new Date(startTime).toISOString();
+      const nextEndTime = startTime + remainingMilliseconds;
+
+      try {
+        if (!isGuest && hasNotificationPermission) {
+          await scheduleTimerNotifications({
+            startTime,
+            focusDurationMilliseconds: remainingMilliseconds,
+            breakDurationMilliseconds,
+            cycleCount,
+          });
+        } else {
+          await cancelTimerNotifications();
+        }
+      } catch (error) {
+        console.warn("타이머 알림 예약 처리 실패:", error);
+      }
+
+      setIsRunning(true);
+      setTimerPhase("focus");
+      timerStartedAtRef.current = startedAt;
+      if (TIMER_QA_MODE && !isGuest) {
+        updateTimerSettings({
+          beverageId: DEFAULT_BEVERAGE_ID,
+          focusMinutes: DEFAULT_FOCUS_MINUTES,
+          breakMinutes: BREAK_MINUTES,
+          cycleCount: MAX_CYCLE_COUNT,
+        }).catch((error) =>
+          console.log("QA 타이머 설정 전송 오류:", error),
+        );
+      }
+      setActiveTimerSession({
+        phase: "focus",
+        endTime: nextEndTime,
+        currentCycle,
+        cycleCount,
+        focusMinutes,
+        startedAt,
+      });
+      setEndTime(nextEndTime);
+    } finally {
+      isStartingRef.current = false;
+    }
   };
 
-  const resetTimer = () => {
-    clearActiveTimerSession();
-    timerStartedAtRef.current = null;
-    setCurrentCycle(MIN_CYCLE_COUNT);
-    setTimerPhase("focus");
-    setRemainingMilliseconds(getFocusDurationMilliseconds(focusMinutes));
-    setEndTime(null);
-    setIsRunning(false);
+  const resetTimer = async () => {
+    if (isStartingRef.current) {
+      return;
+    }
+
+    isStartingRef.current = true;
+
+    try {
+      try {
+        await cancelTimerNotifications();
+      } catch (error) {
+        console.warn("타이머 알림 예약 취소 실패:", error);
+      }
+
+      clearActiveTimerSession();
+      timerStartedAtRef.current = null;
+      setCurrentCycle(MIN_CYCLE_COUNT);
+      setTimerPhase("focus");
+      setRemainingMilliseconds(getFocusDurationMilliseconds(focusMinutes));
+      setEndTime(null);
+      setIsRunning(false);
+    } finally {
+      isStartingRef.current = false;
+    }
   };
 
   const closeCompleteModal = async () => {
+    await clearTimerNotificationIds();
     const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
     const minutes = parseStoredFocusMinutes(savedFocusMinutes);
 
