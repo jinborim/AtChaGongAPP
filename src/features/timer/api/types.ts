@@ -1,9 +1,3 @@
-export type Beverage = {
-  beverageId: number;
-  name: string;
-  imgUrl: string;
-};
-
 export type TimerSettings = {
   focusMinutes: number;
   breakMinutes: number;

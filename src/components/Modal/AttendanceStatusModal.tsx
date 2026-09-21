@@ -17,9 +17,7 @@ export default function AttendanceStatusModal({
   attendanceDay,
   onClose,
 }: Props) {
-  const completedDays = attendedToday
-    ? attendanceDay
-    : Math.max(0, attendanceDay - 1);
+  const completedDays = Math.min(7, Math.max(0, attendanceDay));
 
   return (
     <Modal
@@ -57,9 +55,6 @@ export default function AttendanceStatusModal({
             {Array.from({ length: 7 }, (_, index) => {
               const day = index + 1;
               const completed = day <= completedDays;
-              const amount =
-                day === 7 ? WEEKLY_ATTENDANCE_REWARD : DAILY_ATTENDANCE_REWARD;
-
               return (
                 <View key={day} className="items-center gap-y-1">
                   <View
@@ -74,7 +69,9 @@ export default function AttendanceStatusModal({
                     </Text>
                   </View>
                   <Text className="font-maru text-[9px] text-primary">
-                    +{amount}
+                    {day === 7
+                      ? `${DAILY_ATTENDANCE_REWARD}/${WEEKLY_ATTENDANCE_REWARD}`
+                      : `+${DAILY_ATTENDANCE_REWARD}`}
                   </Text>
                 </View>
               );
@@ -82,7 +79,7 @@ export default function AttendanceStatusModal({
           </View>
 
           <Text className="mt-5 text-center font-maru text-xs leading-5 text-primary">
-            1~6일째에는 10코인, 7일째에는 70코인을 받아요.
+            매일 {DAILY_ATTENDANCE_REWARD}코인 · 7일 연속 출석 시 {WEEKLY_ATTENDANCE_REWARD}코인
           </Text>
 
           <Pressable

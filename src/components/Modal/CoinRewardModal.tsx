@@ -11,6 +11,8 @@ type Props = {
   balance: number;
   onClose: () => void;
   attendanceDay?: number;
+  rewardAmount?: number;
+  isSevenDayStreakCompleted?: boolean;
   completedCycleCount?: number;
 };
 
@@ -20,14 +22,18 @@ export default function CoinRewardModal({
   balance,
   onClose,
   attendanceDay = 1,
+  rewardAmount,
+  isSevenDayStreakCompleted = false,
   completedCycleCount = 1,
 }: Props) {
   const isAttendance = variant === "attendance";
-  const reward = isAttendance
-    ? attendanceDay === 7
-      ? WEEKLY_ATTENDANCE_REWARD
-      : DAILY_ATTENDANCE_REWARD
-    : FOCUS_COMPLETION_REWARD;
+  const reward =
+    rewardAmount ??
+    (isAttendance
+      ? attendanceDay === 7 && isSevenDayStreakCompleted
+        ? WEEKLY_ATTENDANCE_REWARD
+        : DAILY_ATTENDANCE_REWARD
+      : FOCUS_COMPLETION_REWARD);
 
   return (
     <Modal
@@ -62,8 +68,6 @@ export default function CoinRewardModal({
                 {Array.from({ length: 7 }, (_, index) => {
                   const day = index + 1;
                   const completed = day <= attendanceDay;
-                  const amount = day === 7 ? WEEKLY_ATTENDANCE_REWARD : DAILY_ATTENDANCE_REWARD;
-
                   return (
                     <View key={day} className="items-center gap-y-1">
                       <View
@@ -78,14 +82,16 @@ export default function CoinRewardModal({
                         </Text>
                       </View>
                       <Text className="font-maru text-[9px] text-primary">
-                        +{amount}
+                        {day === 7
+                          ? `${DAILY_ATTENDANCE_REWARD}/${WEEKLY_ATTENDANCE_REWARD}`
+                          : `+${DAILY_ATTENDANCE_REWARD}`}
                       </Text>
                     </View>
                   );
                 })}
               </View>
               <Text className="mt-4 text-center font-maru text-xs leading-5 text-primary">
-                7일째에는 70코인! 다음 출석은 다시 1일째부터 시작해요.
+                매일 {DAILY_ATTENDANCE_REWARD}코인 · 7일 연속 출석 시 {WEEKLY_ATTENDANCE_REWARD}코인
               </Text>
             </View>
           )}

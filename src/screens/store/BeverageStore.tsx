@@ -11,11 +11,17 @@ import {
 import {
   getSaleBeverages,
   getOwnedBeverages,
+  purchaseBeverage,
   type SaleBeverage,
 } from "@/src/features/beverages/beverageApi";
+import { ApiError } from "@/src/api";
+import { useAuth } from "@/src/features/auth";
+import { getCoinBalance } from "@/src/features/coin";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+  Alert,
+  ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
@@ -33,22 +39,28 @@ type StoreBeverage = BeveragePreview & {
   saleEndsAt: string | null;
 };
 
+type PurchaseNotice = {
+  title: string;
+  description: string;
+  imageSource?: ImageSourcePropType;
+};
+
 function toStoreBeverage(
   beverage: SaleBeverage,
   ownedBeverageIds: ReadonlySet<number>,
 ): StoreBeverage {
   const preview = findBeveragePreviewTemplate(beverage);
-  const price = typeof beverage.price === "number" ? beverage.price : 0;
 
   return {
     ...preview,
     id: String(beverage.beverageId),
     beverageId: beverage.beverageId,
     name: beverage.name,
-    isOwned: price === 0 || ownedBeverageIds.has(beverage.beverageId),
-    isLimited: beverage.isLimited === true,
-    price,
-    saleEndsAt: beverage.saleEndsAt ?? null,
+    isOwned:
+      beverage.price === 0 || ownedBeverageIds.has(beverage.beverageId),
+    isLimited: beverage.isLimited,
+    price: beverage.price,
+    saleEndsAt: beverage.saleEndsAt,
   };
 }
 
@@ -84,11 +96,15 @@ function DrinkImage({ beverage }: { beverage: BeveragePreview }) {
 
 export default function BeverageStore() {
   const router = useRouter();
-  const [purchaseBeverage, setPurchaseBeverage] = useState<StoreBeverage | null>(null);
+  const { isAuthenticated } = useAuth();
+  const [purchaseTarget, setPurchaseTarget] = useState<StoreBeverage | null>(null);
+  const [purchaseNotice, setPurchaseNotice] = useState<PurchaseNotice | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [category, setCategory] = useState<BeverageCategory>("all");
   const [saleBeverages, setSaleBeverages] = useState<StoreBeverage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [coinBalance, setCoinBalance] = useState<number | null>(null);
 
   const loadSaleBeverages = useCallback(async () => {
     setIsLoading(true);
@@ -124,8 +140,95 @@ export default function BeverageStore() {
   useFocusEffect(
     useCallback(() => {
       void loadSaleBeverages();
-    }, [loadSaleBeverages]),
+
+      if (!isAuthenticated) {
+        setCoinBalance(0);
+        return;
+      }
+
+      let active = true;
+
+      getCoinBalance()
+        .then((response) => {
+          if (active) setCoinBalance(response.balance);
+        })
+        .catch((error) => {
+          console.log("코인 잔액 조회 오류:", error);
+          if (active) setCoinBalance(null);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [isAuthenticated, loadSaleBeverages]),
   );
+
+  const handlePurchase = useCallback(async () => {
+    if (!purchaseTarget || isPurchasing) return;
+
+    if (!isAuthenticated) {
+      setPurchaseTarget(null);
+      Alert.alert("로그인이 필요해요", "음료를 구매하려면 로그인해 주세요.", [
+        { text: "취소", style: "cancel" },
+        { text: "로그인", onPress: () => router.push("/login") },
+      ]);
+      return;
+    }
+
+    setIsPurchasing(true);
+
+    try {
+      const purchase = await purchaseBeverage(purchaseTarget.beverageId);
+
+      setCoinBalance(purchase.balance);
+      setSaleBeverages((current) =>
+        current.map((beverage) =>
+          beverage.beverageId === purchase.beverageId
+            ? { ...beverage, isOwned: true }
+            : beverage,
+        ),
+      );
+      setPurchaseTarget(null);
+      setPurchaseNotice({
+        title: "구매 완료",
+        description: `${purchase.name} 구매가 완료되었습니다.\n남은 코인: ${purchase.balance.toLocaleString("ko-KR")}코인`,
+      });
+    } catch (error) {
+      setPurchaseTarget(null);
+
+      if (error instanceof ApiError) {
+        switch (error.code) {
+          case "INSUFFICIENT_COIN":
+            setPurchaseNotice({
+              title: "코인이 부족해요",
+              description: "보유 코인이 부족합니다.",
+              imageSource: require("../../assets/images/PenguinNoCoin.png"),
+            });
+            break;
+          case "BEVERAGE_ALREADY_OWNED":
+            setSaleBeverages((current) =>
+              current.map((beverage) =>
+                beverage.beverageId === purchaseTarget.beverageId
+                  ? { ...beverage, isOwned: true }
+                  : beverage,
+              ),
+            );
+            Alert.alert("이미 보유한 음료예요", error.message);
+            break;
+          case "DEFAULT_BEVERAGE_PURCHASE_NOT_ALLOWED":
+          case "BEVERAGE_NOT_ON_SALE":
+            Alert.alert("구매할 수 없어요", error.message);
+            break;
+          default:
+            Alert.alert("구매 실패", error.message);
+        }
+      } else {
+        Alert.alert("구매 실패", "잠시 후 다시 시도해 주세요.");
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  }, [isAuthenticated, isPurchasing, purchaseTarget, router]);
 
   const products = saleBeverages.filter((beverage) =>
     category === "all" || (category === "limited" ? beverage.isLimited : beverage.category === category),
@@ -140,7 +243,15 @@ export default function BeverageStore() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>음료 상점</Text>
         <Text style={styles.headerSubtitle}>오늘의 집중에 시원함 한 잔</Text>
-        <View style={styles.balanceCard} accessible accessibilityLabel="보유 코인, 잔액 미확인">
+        <View
+          style={styles.balanceCard}
+          accessible
+          accessibilityLabel={
+            coinBalance === null
+              ? "보유 코인, 잔액 미확인"
+              : `보유 코인 ${coinBalance.toLocaleString("ko-KR")}개`
+          }
+        >
           <Text style={styles.balanceLabel}>보유 코인</Text>
           <View style={styles.balanceAmount}>
             <Image
@@ -149,8 +260,11 @@ export default function BeverageStore() {
               contentFit="contain"
               accessible={false}
             />
-            {/* 잔액 API 연결 전에는 실제 보유 금액을 임의로 표시하지 않습니다. */}
-            <Text style={styles.balanceValue}>— 코인</Text>
+            <Text style={styles.balanceValue}>
+              {coinBalance === null
+                ? "— 코인"
+                : `${coinBalance.toLocaleString("ko-KR")} 코인`}
+            </Text>
           </View>
         </View>
       </View>
@@ -253,13 +367,15 @@ export default function BeverageStore() {
                       </View>
                       {beverage.isOwned ? (
                         <View style={[styles.priceRow, styles.ownedPriceRow]}>
-                          <Text style={styles.priceText}>기본 지급</Text>
+                          <Text style={styles.priceText}>
+                            {beverage.price === 0 ? "기본 지급" : "구매 완료"}
+                          </Text>
                         </View>
                       ) : (
                       <TouchableOpacity
                         accessibilityRole="button"
                         accessibilityLabel={`${beverage.name}, ${beverage.price.toLocaleString("ko-KR")} 코인, 구매`}
-                        onPress={() => setPurchaseBeverage(beverage)}
+                        onPress={() => setPurchaseTarget(beverage)}
                         activeOpacity={0.7}
                         style={styles.purchaseButton}
                       >
@@ -335,14 +451,31 @@ export default function BeverageStore() {
       <View pointerEvents="none" style={styles.navBackground} />
       <NavigationBar />
       <CustomModal
-        visible={purchaseBeverage !== null}
-        onClose={() => setPurchaseBeverage(null)}
-        onConfirm={() => setPurchaseBeverage(null)}
+        visible={purchaseTarget !== null}
+        onClose={() => {
+          if (!isPurchasing) setPurchaseTarget(null);
+        }}
+        onConfirm={() => void handlePurchase()}
         title="구매"
-        description="구매하시겠습니까?"
+        imageSource={require("../../assets/images/PenguinPurchase.png")}
+        description={
+          purchaseTarget
+            ? `${purchaseTarget.name}을(를) ${purchaseTarget.price.toLocaleString("ko-KR")}코인에 구매하시겠습니까?`
+            : "구매하시겠습니까?"
+        }
         buttonCount={2}
-        confirmText="확인"
+        confirmText={isPurchasing ? "구매 중..." : "구매"}
         cancelText="취소"
+      />
+      <CustomModal
+        visible={purchaseNotice !== null}
+        onClose={() => setPurchaseNotice(null)}
+        onConfirm={() => setPurchaseNotice(null)}
+        title={purchaseNotice?.title ?? "구매 안내"}
+        description={purchaseNotice?.description ?? ""}
+        imageSource={purchaseNotice?.imageSource}
+        buttonCount={1}
+        confirmText="확인"
       />
     </SafeAreaView>
   );

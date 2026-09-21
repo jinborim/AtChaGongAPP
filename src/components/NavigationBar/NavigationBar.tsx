@@ -29,8 +29,10 @@ const NAVIGATION_ITEMS: {
   {
     label: "통계",
     icon: require("../../assets/images/StatisticsIconV2.png"),
-    iconSize: 48,
-    iconOffsetY: -2.6,
+    // 이미지 자체의 투명 여백을 보정해 다른 네비게이션 아이콘과
+    // 실제로 보이는 크기와 세로 중심을 맞춥니다.
+    iconSize: 56,
+    iconOffsetY: -2,
     href: "/month",
   },
   {

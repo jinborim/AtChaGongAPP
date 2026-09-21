@@ -5,13 +5,12 @@ import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
 import ProfileImageModal from "@/src/components/Modal/ProfileImageModal";
 import CoinBalance from "@/src/components/CoinBalance";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
-import { useAuth } from "@/src/features/auth";
 import {
-  getSeoulDateKey,
-  MOCK_ATTENDANCE_DAY,
-  MOCK_ATTENDANCE_DATE_STORAGE_KEY,
-  MOCK_COIN_BALANCE,
-} from "@/src/constants/coin";
+  getAttendanceStatus,
+  type AttendanceStatus,
+} from "@/src/features/attendance";
+import { useAuth } from "@/src/features/auth";
+import { getCoinBalance } from "@/src/features/coin";
 import { logoutCurrentUser } from "@/src/features/auth/services";
 import {
   deleteMe,
@@ -27,15 +26,14 @@ import {
   type ProfileImageId,
 } from "@/src/features/user/profileImages";
 import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   Check,
   ChevronRight,
   Pencil,
   RefreshCw,
 } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -53,7 +51,8 @@ const DEFAULT_NICKNAME = "사용자";
 const PROFILE_IMAGE_KEY = "atchagong.profile-image.v1";
 
 export default function Mypage() {
-  const { isGuest, setSignedOut, updateCurrentUser, user } = useAuth();
+  const { isAuthenticated, isGuest, setSignedOut, updateCurrentUser, user } =
+    useAuth();
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
   const [isEditing, setIsEditing] = useState(false); // 추가: 편집 모드 여부
   const [inputNickname, setInputNickname] = useState(""); // 추가: input에 입력 중인 값
@@ -68,7 +67,11 @@ export default function Mypage() {
   const [isAttendanceLoginPromptOpen, setIsAttendanceLoginPromptOpen] =
     useState(false);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
-  const [hasAttendedToday, setHasAttendedToday] = useState(false);
+  const [attendanceStatus, setAttendanceStatus] =
+    useState<AttendanceStatus | null>(null);
+  const [isAttendanceStatusLoading, setIsAttendanceStatusLoading] =
+    useState(false);
+  const [coinBalance, setCoinBalance] = useState(0);
   const router = useRouter();
   const [profileImageId, setProfileImageId] = useState<ProfileImageId>("bear");
   const [draftProfileImageId, setDraftProfileImageId] = useState<ProfileImageId>("bear");
@@ -77,6 +80,29 @@ export default function Mypage() {
   const [isSavingProfileImage, setIsSavingProfileImage] = useState(false);
   const [availableProfileIds, setAvailableProfileIds] = useState<number[]>(
     PROFILE_IMAGES.map((item) => item.profileId),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      if (!isAuthenticated) {
+        setCoinBalance(0);
+        return () => {
+          active = false;
+        };
+      }
+
+      getCoinBalance()
+        .then((response) => {
+          if (active) setCoinBalance(response.balance);
+        })
+        .catch((error) => console.log("코인 잔액 조회 오류:", error));
+
+      return () => {
+        active = false;
+      };
+    }, [isAuthenticated]),
   );
 
   useEffect(() => {
@@ -144,22 +170,27 @@ export default function Mypage() {
   };
 
   const handleOpenAttendance = async () => {
-    if (isGuest) {
+    if (!isAuthenticated) {
       setIsAttendanceLoginPromptOpen(true);
       return;
     }
 
+    if (isAttendanceStatusLoading) return;
+    setIsAttendanceStatusLoading(true);
+
     try {
-      const rewardedDate = await AsyncStorage.getItem(
-        MOCK_ATTENDANCE_DATE_STORAGE_KEY,
-      );
-      setHasAttendedToday(rewardedDate === getSeoulDateKey());
+      const status = await getAttendanceStatus();
+      setAttendanceStatus(status);
+      setIsAttendanceModalOpen(true);
     } catch (error) {
       console.log("출석 현황 확인 오류:", error);
-      setHasAttendedToday(false);
+      Alert.alert(
+        "출석 현황 조회 실패",
+        "출석 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setIsAttendanceStatusLoading(false);
     }
-
-    setIsAttendanceModalOpen(true);
   };
 
   const handleSaveProfileImage = async () => {
@@ -343,7 +374,7 @@ export default function Mypage() {
             )}
             <View className="mt-3 self-start">
               <CoinBalance
-                balance={isGuest ? 0 : MOCK_COIN_BALANCE}
+                balance={isGuest ? 0 : coinBalance}
                 compact
                 onPress={() => router.push("/store")}
               />
@@ -380,6 +411,8 @@ export default function Mypage() {
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="출석 현황 확인"
+              accessibilityState={{ disabled: isAttendanceStatusLoading }}
+              disabled={isAttendanceStatusLoading}
               className="h-16 flex-row items-center border-b-2 border-primary px-5"
               onPress={() => {
                 handleOpenAttendance().catch((error) =>
@@ -490,9 +523,11 @@ export default function Mypage() {
         onConfirm={handleSaveProfileImage}
       />
       <AttendanceStatusModal
-        visible={isAttendanceModalOpen && !isGuest}
-        attendedToday={hasAttendedToday}
-        attendanceDay={MOCK_ATTENDANCE_DAY}
+        visible={
+          isAttendanceModalOpen && isAuthenticated && attendanceStatus !== null
+        }
+        attendedToday={attendanceStatus?.attendedToday ?? false}
+        attendanceDay={attendanceStatus?.consecutiveDay ?? 0}
         onClose={() => setIsAttendanceModalOpen(false)}
       />
       <CustomModal

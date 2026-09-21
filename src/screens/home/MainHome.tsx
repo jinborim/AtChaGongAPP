@@ -10,13 +10,14 @@ import {
   completeFocusRecord,
   getTimerSettings,
 } from "@/src/features/timer";
-import { useAuth } from "@/src/features/auth";
 import {
-  getSeoulDateKey,
-  MOCK_ATTENDANCE_DAY,
-  MOCK_ATTENDANCE_DATE_STORAGE_KEY,
-  MOCK_COIN_BALANCE,
-} from "@/src/constants/coin";
+  attendToday,
+  type AttendanceReward,
+} from "@/src/features/attendance";
+import { getCoinBalance } from "@/src/features/coin";
+import { useAuth } from "@/src/features/auth";
+import { ApiError } from "@/src/api/types";
+import { FOCUS_COMPLETION_REWARD } from "@/src/constants/coin";
 import {
   clearActiveTimerSession,
   getActiveTimerSession,
@@ -59,7 +60,7 @@ const DEFAULT_NICKNAME = "사용자";
 
 export default function StudyScreen() {
   const router = useRouter();
-  const { isGuest, user } = useAuth();
+  const { isAuthenticated, isGuest, user } = useAuth();
   const [initialSession] = useState(() => getActiveTimerSession());
   const [focusMinutes, setFocusMinutes] = useState(
     initialSession?.focusMinutes ?? DEFAULT_FOCUS_MINUTES,
@@ -81,6 +82,9 @@ export default function StudyScreen() {
   );
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceReward, setAttendanceReward] =
+    useState<AttendanceReward | null>(null);
+  const [coinBalance, setCoinBalance] = useState(0);
   const [showResetModal, setShowResetModal] = useState(false);
   const [interactionSignal, setInteractionSignal] = useState(0);
   const [selectedBeverageId, setSelectedBeverageId] = useState(
@@ -156,34 +160,73 @@ export default function StudyScreen() {
     isRunningRef.current = isRunning;
   }, [isRunning]);
 
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      if (!isAuthenticated) {
+        setCoinBalance(0);
+        return () => {
+          isActive = false;
+        };
+      }
+
+      getCoinBalance()
+        .then((response) => {
+          if (isActive) setCoinBalance(response.balance);
+        })
+        .catch((error) => console.log("코인 잔액 조회 오류:", error));
+
+      return () => {
+        isActive = false;
+      };
+    }, [isAuthenticated]),
+  );
+
   useEffect(() => {
-    if (isGuest) {
+    if (!isAuthenticated) {
       setShowAttendanceModal(false);
+      setAttendanceReward(null);
+      setCoinBalance(0);
       return;
     }
 
     let isActive = true;
 
-    const showFirstAttendanceRewardOfDay = async () => {
-      const today = getSeoulDateKey();
-      const rewardedDate = await AsyncStorage.getItem(
-        MOCK_ATTENDANCE_DATE_STORAGE_KEY,
-      );
+    const processAttendance = async () => {
+      try {
+        const reward = await attendToday();
 
-      if (!isActive || rewardedDate === today) return;
+        if (!isActive) return;
 
-      await AsyncStorage.setItem(MOCK_ATTENDANCE_DATE_STORAGE_KEY, today);
-      if (isActive) setShowAttendanceModal(true);
+        setAttendanceReward(reward);
+        setCoinBalance(reward.balance);
+        setShowAttendanceModal(true);
+      } catch (error) {
+        const alreadyAttended =
+          error instanceof ApiError && error.code === "ALREADY_ATTENDED";
+
+        if (!alreadyAttended) {
+          console.log("출석 보상 처리 오류:", error);
+        }
+
+        try {
+          const currentBalance = await getCoinBalance();
+          if (isActive) setCoinBalance(currentBalance.balance);
+        } catch (balanceError) {
+          console.log("코인 잔액 조회 오류:", balanceError);
+        }
+      }
     };
 
-    showFirstAttendanceRewardOfDay().catch((error) =>
-      console.log("출석 보상 목업 확인 오류:", error),
+    processAttendance().catch((error) =>
+      console.log("출석 보상 확인 오류:", error),
     );
 
     return () => {
       isActive = false;
     };
-  }, [isGuest]);
+  }, [isAuthenticated]);
 
   useFocusEffect(
     useCallback(() => {
@@ -288,6 +331,10 @@ export default function StudyScreen() {
         startedAt: timerStartedAtRef.current ?? completedAt,
         completedAt,
       });
+
+      if (isMountedRef.current) {
+        setCoinBalance((current) => current + FOCUS_COMPLETION_REWARD);
+      }
 
       timerStartedAtRef.current = null;
     },
@@ -442,7 +489,7 @@ export default function StudyScreen() {
       >
         <View className="h-12 w-full flex-row items-center justify-end px-4">
           <CoinBalance
-            balance={isGuest ? 0 : MOCK_COIN_BALANCE}
+            balance={isGuest ? 0 : coinBalance}
             compact
             onPress={() => router.push("/store")}
           />
@@ -605,7 +652,7 @@ export default function StudyScreen() {
           <CoinRewardModal
             visible={showCompleteModal}
             variant="focus"
-            balance={MOCK_COIN_BALANCE}
+            balance={coinBalance}
             completedCycleCount={cycleCount}
             onClose={() => {
               closeCompleteModal().catch((error) =>
@@ -615,10 +662,14 @@ export default function StudyScreen() {
           />
         )}
         <CoinRewardModal
-          visible={showAttendanceModal}
+          visible={showAttendanceModal && attendanceReward !== null}
           variant="attendance"
-          attendanceDay={MOCK_ATTENDANCE_DAY}
-          balance={MOCK_COIN_BALANCE}
+          attendanceDay={attendanceReward?.consecutiveDay ?? 1}
+          rewardAmount={attendanceReward?.grantedCoin}
+          isSevenDayStreakCompleted={
+            attendanceReward?.consecutiveDay === 7
+          }
+          balance={attendanceReward?.balance ?? coinBalance}
           onClose={() => setShowAttendanceModal(false)}
         />
       </SafeAreaView>

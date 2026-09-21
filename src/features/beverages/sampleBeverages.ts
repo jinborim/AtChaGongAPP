@@ -101,13 +101,10 @@ export const SAMPLE_BEVERAGES: readonly BeveragePreview[] = [
 export type BeverageIdentity = {
   beverageId: number;
   name: string;
-  imgUrl: string;
 };
 
 export function findBeveragePreviewTemplate(beverage: BeverageIdentity) {
-  const identity = `${beverage.name} ${beverage.imgUrl}`
-    .replace(/[\s_-]/g, "")
-    .toLowerCase();
+  const identity = beverage.name.replace(/[\s_-]/g, "").toLowerCase();
 
   if (identity.includes("청포도") || identity.includes("greengrape")) {
     return SAMPLE_BEVERAGES[3];

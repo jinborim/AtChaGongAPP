@@ -7,16 +7,14 @@ import {
 export type SaleBeverage = {
   beverageId: number;
   name: string;
-  imgUrl: string;
-  price: number | null;
-  isLimited: boolean | null;
-  saleEndsAt?: string | null;
+  price: number;
+  isLimited: boolean;
+  saleEndsAt: string | null;
 };
 
 export type OwnedBeverage = {
   beverageId: number;
   name: string;
-  imgUrl: string;
   isSelected: boolean;
   acquiredAt: string;
 };
@@ -24,7 +22,13 @@ export type OwnedBeverage = {
 export type SelectedBeverage = {
   beverageId: number;
   name: string;
-  imgUrl: string;
+};
+
+export type BeveragePurchase = {
+  beverageId: number;
+  name: string;
+  paidCoin: number;
+  balance: number;
 };
 
 export function getSaleBeverages() {
@@ -47,6 +51,15 @@ export function selectBeverage(beverageId: number) {
     {
       method: "PUT",
       body: { beverageId },
+    },
+  );
+}
+
+export function purchaseBeverage(beverageId: number) {
+  return apiClient.request<BeveragePurchase>(
+    `/beverages/${beverageId}/purchase`,
+    {
+      method: "POST",
     },
   );
 }
