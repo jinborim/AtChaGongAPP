@@ -29,6 +29,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  AppState,
+  type AppStateStatus,
   Image,
   ImageBackground,
   PanResponder,
@@ -57,6 +59,19 @@ import {
 } from "../../utils/timerSettings";
 
 const DEFAULT_NICKNAME = "사용자";
+const SEOUL_UTC_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
+
+function getMillisecondsUntilNextSeoulMidnight(now = Date.now()) {
+  const seoulNow = new Date(now + SEOUL_UTC_OFFSET_MILLISECONDS);
+  const nextSeoulMidnight =
+    Date.UTC(
+      seoulNow.getUTCFullYear(),
+      seoulNow.getUTCMonth(),
+      seoulNow.getUTCDate() + 1,
+    ) - SEOUL_UTC_OFFSET_MILLISECONDS;
+
+  return Math.max(1000, nextSeoulMidnight - now + 1000);
+}
 
 export default function StudyScreen() {
   const router = useRouter();
@@ -192,8 +207,13 @@ export default function StudyScreen() {
     }
 
     let isActive = true;
+    let isAttendanceRequestInFlight = false;
+    let midnightTimer: ReturnType<typeof setTimeout> | undefined;
 
     const processAttendance = async () => {
+      if (isAttendanceRequestInFlight) return;
+      isAttendanceRequestInFlight = true;
+
       try {
         const reward = await attendToday();
 
@@ -216,15 +236,45 @@ export default function StudyScreen() {
         } catch (balanceError) {
           console.log("코인 잔액 조회 오류:", balanceError);
         }
+      } finally {
+        isAttendanceRequestInFlight = false;
       }
+    };
+
+    const scheduleNextMidnightAttendance = () => {
+      if (midnightTimer) clearTimeout(midnightTimer);
+
+      midnightTimer = setTimeout(() => {
+        processAttendance()
+          .catch((error) => console.log("자정 출석 보상 확인 오류:", error))
+          .finally(() => {
+            if (isActive) scheduleNextMidnightAttendance();
+          });
+      }, getMillisecondsUntilNextSeoulMidnight());
+    };
+
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState !== "active") return;
+
+      processAttendance().catch((error) =>
+        console.log("앱 활성화 출석 보상 확인 오류:", error),
+      );
+      scheduleNextMidnightAttendance();
     };
 
     processAttendance().catch((error) =>
       console.log("출석 보상 확인 오류:", error),
     );
+    scheduleNextMidnightAttendance();
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange,
+    );
 
     return () => {
       isActive = false;
+      if (midnightTimer) clearTimeout(midnightTimer);
+      appStateSubscription.remove();
     };
   }, [isAuthenticated]);
 

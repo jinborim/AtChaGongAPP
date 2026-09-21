@@ -192,6 +192,7 @@ export default function BeverageStore() {
       setPurchaseNotice({
         title: "구매 완료",
         description: `${purchase.name} 구매가 완료되었습니다.\n남은 코인: ${purchase.balance.toLocaleString("ko-KR")}코인`,
+        imageSource: require("../../assets/images/PenguinPurchaseComplete.png"),
       });
     } catch (error) {
       setPurchaseTarget(null);
