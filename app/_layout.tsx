@@ -1,10 +1,23 @@
 import { AuthProvider, useAuth } from "@/src/features/auth";
+import {
+  configureForegroundNotificationHandler,
+  ensureTimerNotificationChannel,
+} from "@/src/features/notifications";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 import "react-native-reanimated";
 import "../global.css";
 
+configureForegroundNotificationHandler();
+
 export default function RootLayout() {
+  useEffect(() => {
+    ensureTimerNotificationChannel().catch((error) => {
+      console.warn("타이머 알림 채널 생성 실패:", error);
+    });
+  }, []);
+
   return (
     <AuthProvider>
       <RootNavigator />

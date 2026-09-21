@@ -24,6 +24,7 @@
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E8F3FC",
         "backgroundImage": "./src/assets/images/Background.png",
@@ -41,6 +42,7 @@
     "plugins": [
       "@bacons/apple-targets",
       "expo-router",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {

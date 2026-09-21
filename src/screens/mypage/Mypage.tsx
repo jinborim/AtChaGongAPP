@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/src/features/auth";
 import { getCoinBalance } from "@/src/features/coin";
 import { logoutCurrentUser } from "@/src/features/auth/services";
+import { cancelTimerNotifications } from "@/src/features/notifications";
 import {
   deleteMe,
   getProfileImages,
@@ -260,10 +261,12 @@ export default function Mypage() {
     setIsLoggingOut(true);
 
     try {
-      await logoutCurrentUser();
-    } catch {
-      // 서버 로그아웃이 실패해도 로컬 토큰은 삭제되므로 로그인 화면으로 이동합니다.
+      await Promise.allSettled([
+        logoutCurrentUser(),
+        cancelTimerNotifications(),
+      ]);
     } finally {
+      // 서버 로그아웃 또는 알림 취소가 실패해도 로컬 로그아웃은 완료합니다.
       setIsLoggingOut(false);
       setIsLogoutModalOpen(false);
       setSignedOut();
