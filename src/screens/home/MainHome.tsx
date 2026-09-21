@@ -13,7 +13,6 @@ import {
 import {
   completeFocusRecord,
   getTimerSettings,
-  updateTimerSettings,
 } from "@/src/features/timer";
 import { useAuth } from "@/src/features/auth";
 import {
@@ -36,15 +35,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import {
-  BREAK_MINUTES,
   DEFAULT_BEVERAGE_ID,
   DEFAULT_CYCLE_COUNT,
   DEFAULT_FOCUS_MINUTES,
   getBreakDurationMilliseconds,
   getFocusDurationMilliseconds,
-  MAX_CYCLE_COUNT,
   MIN_CYCLE_COUNT,
-  TIMER_QA_MODE,
 } from "../../constants/timer";
 import {
   normalizeCycleCount,
@@ -75,6 +71,8 @@ export default function StudyScreen() {
     initialSession?.endTime ?? null,
   );
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [interactionSignal, setInteractionSignal] = useState(0);
   const [cycleCount, setCycleCount] = useState(
     initialSession?.cycleCount ?? DEFAULT_CYCLE_COUNT,
   );
@@ -87,6 +85,8 @@ export default function StudyScreen() {
   );
   const isRunningRef = useRef(isRunning);
   const isStartingRef = useRef(false);
+  const isMountedRef = useRef(true);
+
   const timerStartedAtRef = useRef<string | null>(
     initialSession?.startedAt ?? null,
   );
@@ -133,6 +133,11 @@ export default function StudyScreen() {
   );
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
     isRunningRef.current = isRunning;
   }, [isRunning]);
 
@@ -166,17 +171,6 @@ export default function StudyScreen() {
 
         if (isGuest) {
           setNickname("게스트");
-          return;
-        }
-
-        if (TIMER_QA_MODE) {
-          setNickname("QA 사용자");
-          if (!isRunningRef.current) {
-            setFocusMinutes(DEFAULT_FOCUS_MINUTES);
-            setCycleCount(MAX_CYCLE_COUNT);
-            setCurrentCycle(MIN_CYCLE_COUNT);
-          }
-          await AsyncStorage.setItem("cycleCount", String(MAX_CYCLE_COUNT));
           return;
         }
 
@@ -276,6 +270,7 @@ export default function StudyScreen() {
           sendFocusCompletion(cycleCount).catch((error) =>
             console.log("집중 완료 기록 전송 오류:", error),
           );
+          setShowResetModal(false);
           setShowCompleteModal(true);
           return;
         }
@@ -356,6 +351,10 @@ export default function StudyScreen() {
         }
       }
 
+      if (!isMountedRef.current) {
+        return;
+      }
+
       const startTime = Date.now();
       const startedAt = new Date(startTime).toISOString();
       const nextEndTime = startTime + remainingMilliseconds;
@@ -375,19 +374,18 @@ export default function StudyScreen() {
         console.warn("타이머 알림 예약 처리 실패:", error);
       }
 
+      if (!isMountedRef.current) {
+        try {
+          await cancelTimerNotifications();
+        } catch (error) {
+          console.warn("화면 종료 후 타이머 알림 예약 취소 실패:", error);
+        }
+        return;
+      }
+
       setIsRunning(true);
       setTimerPhase("focus");
       timerStartedAtRef.current = startedAt;
-      if (TIMER_QA_MODE && !isGuest) {
-        updateTimerSettings({
-          beverageId: DEFAULT_BEVERAGE_ID,
-          focusMinutes: DEFAULT_FOCUS_MINUTES,
-          breakMinutes: BREAK_MINUTES,
-          cycleCount: MAX_CYCLE_COUNT,
-        }).catch((error) =>
-          console.log("QA 타이머 설정 전송 오류:", error),
-        );
-      }
       setActiveTimerSession({
         phase: "focus",
         endTime: nextEndTime,
@@ -403,19 +401,15 @@ export default function StudyScreen() {
   };
 
   const resetTimer = async () => {
-    if (isStartingRef.current) {
+    setShowResetModal(false);
+
+    if (!isRunning || isStartingRef.current) {
       return;
     }
 
     isStartingRef.current = true;
 
     try {
-      try {
-        await cancelTimerNotifications();
-      } catch (error) {
-        console.warn("타이머 알림 예약 취소 실패:", error);
-      }
-
       clearActiveTimerSession();
       timerStartedAtRef.current = null;
       setCurrentCycle(MIN_CYCLE_COUNT);
@@ -423,6 +417,12 @@ export default function StudyScreen() {
       setRemainingMilliseconds(getFocusDurationMilliseconds(focusMinutes));
       setEndTime(null);
       setIsRunning(false);
+
+      try {
+        await cancelTimerNotifications();
+      } catch (error) {
+        console.warn("타이머 알림 예약 취소 실패:", error);
+      }
     } finally {
       isStartingRef.current = false;
     }
@@ -446,7 +446,10 @@ export default function StudyScreen() {
       className="flex-1"
       resizeMode="cover"
     >
-      <SafeAreaView className="flex-1 items-center">
+      <SafeAreaView
+        className="flex-1 items-center"
+        onTouchStart={() => setInteractionSignal((current) => current + 1)}
+      >
         <View className="mt-10 h-[120px] w-full items-center justify-center">
           {isRunning ? (
             <View className="h-[120px] w-[80%] justify-center">
@@ -518,6 +521,8 @@ export default function StudyScreen() {
         </View>
 
         <TimerSessionContent
+          isRunning={isRunning}
+          interactionSignal={interactionSignal}
           phase={timerPhase}
           focusProgress={timerPhase === "focus" ? timerProgress : 0}
           breakProgress={timerPhase === "break" ? timerProgress : 0}
@@ -529,7 +534,7 @@ export default function StudyScreen() {
           accessibilityLabel={canResetTimer ? "타이머 초기화" : "타이머 시작"}
           accessibilityHint={
             canResetTimer
-              ? "실행 중인 타이머를 기록하지 않고 초기화합니다"
+              ? "사이클 초기화 확인 팝업을 엽니다"
               : undefined
           }
           className={`mt-2 h-[72px] w-[100px] items-center justify-center ${
@@ -538,7 +543,9 @@ export default function StudyScreen() {
           disabled={
             !canResetTimer && (!isSettingsLoaded || remainingMilliseconds === 0)
           }
-          onPress={canResetTimer ? resetTimer : startTimer}
+          onPress={
+            canResetTimer ? () => setShowResetModal(true) : startTimer
+          }
         >
           <Image
             source={require("../../assets/images/PlayButton.png")}
@@ -548,11 +555,23 @@ export default function StudyScreen() {
           />
           <Image
             source={require("../../assets/images/ResetButton.png")}
-            className="absolute h-[68px] w-[91px]"
-            resizeMode="contain"
+            // 원본 이미지의 투명 여백을 감안해 재생 버튼의 실제 테두리 크기에 맞춥니다.
+            className="absolute h-[60px] w-[87px]"
+            resizeMode="stretch"
             style={{ opacity: canResetTimer ? 1 : 0 }}
           />
         </TouchableOpacity>
+
+        <CustomModal
+          visible={showResetModal && isRunning}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={resetTimer}
+          title="초기화"
+          description="사이클을 초기화하시겠습니까?"
+          buttonCount={2}
+          confirmText="확인"
+          cancelText="취소"
+        />
 
         <CustomModal
           visible={showCompleteModal}

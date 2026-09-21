@@ -1,19 +1,23 @@
 import { clearAuthTokensForRecovery } from "@/src/api";
 import CustomModal from "@/src/components/Modal/CustomModal";
 import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
+import ProfileImageModal from "@/src/components/Modal/ProfileImageModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import { useAuth } from "@/src/features/auth";
 import { logoutCurrentUser } from "@/src/features/auth/services";
 import { cancelTimerNotifications } from "@/src/features/notifications";
 import { deleteMe, updateNickname } from "@/src/features/user";
+import { getProfileImage, type ProfileImageId } from "@/src/features/user/profileImages";
+import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
-import { Check, ChevronRight, Pencil } from "lucide-react-native";
+import { Check, ChevronRight, Pencil, RefreshCw } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
   ImageBackground,
   Pressable,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
@@ -21,6 +25,8 @@ import {
 } from "react-native";
 const PRIMARY = "#183765";
 const DEFAULT_NICKNAME = "사용자";
+// 서버 프로필 API 연결 전까지 기기별로 선택을 보관합니다.
+const PROFILE_IMAGE_KEY = "atchagong.profile-image.v1";
 
 export default function Mypage() {
   const { isGuest, setSignedOut, updateCurrentUser, user } = useAuth();
@@ -36,6 +42,56 @@ export default function Mypage() {
   const [isProfileLoginPromptOpen, setIsProfileLoginPromptOpen] =
     useState(false);
   const router = useRouter();
+  const [profileImageId, setProfileImageId] = useState<ProfileImageId>("bear");
+  const [draftProfileImageId, setDraftProfileImageId] = useState<ProfileImageId>("bear");
+  const [isProfileImageModalOpen, setIsProfileImageModalOpen] = useState(false);
+  const [isProfileImageReady, setIsProfileImageReady] = useState(false);
+  const [isSavingProfileImage, setIsSavingProfileImage] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const restore = async () => {
+      try {
+        const saved = Platform.OS === "web"
+          ? window.localStorage.getItem(PROFILE_IMAGE_KEY)
+          : await SecureStore.getItemAsync(PROFILE_IMAGE_KEY);
+        if (active) setProfileImageId(getProfileImage(saved).id);
+      } catch {
+        // 읽기에 실패하면 기본 곰 프로필로 시작합니다.
+      } finally {
+        if (active) setIsProfileImageReady(true);
+      }
+    };
+    void restore();
+    return () => { active = false; };
+  }, []);
+
+  const handleOpenProfileImages = () => {
+    if (isGuest) {
+      setIsProfileLoginPromptOpen(true);
+      return;
+    }
+    setDraftProfileImageId(profileImageId);
+    setIsProfileImageModalOpen(true);
+  };
+
+  const handleSaveProfileImage = async () => {
+    if (isSavingProfileImage) return;
+    setIsSavingProfileImage(true);
+    try {
+      if (Platform.OS === "web") {
+        window.localStorage.setItem(PROFILE_IMAGE_KEY, draftProfileImageId);
+      } else {
+        await SecureStore.setItemAsync(PROFILE_IMAGE_KEY, draftProfileImageId);
+      }
+      setProfileImageId(draftProfileImageId);
+      setIsProfileImageModalOpen(false);
+    } catch {
+      Alert.alert("프로필 저장 실패", "잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsSavingProfileImage(false);
+    }
+  };
 
   useEffect(() => {
     setNickname(isGuest ? "게스트" : user?.nickname || DEFAULT_NICKNAME);
@@ -132,13 +188,23 @@ export default function Mypage() {
       <View className="flex-1 px-12 pt-24">
         {/* 프로필 */}
         <View className="mb-12 flex-row items-center">
-          <View className="mr-8 h-16 w-16 items-center justify-center ">
+          <Pressable
+            className="mr-8 h-16 w-16 items-center justify-center"
+            accessibilityRole="button"
+            accessibilityLabel="프로필 이미지 변경"
+            accessibilityState={{ disabled: !isProfileImageReady }}
+            disabled={!isProfileImageReady}
+            onPress={handleOpenProfileImages}
+          >
             <Image
-              source={require("../../assets/images/Bear.png")}
+              source={getProfileImage(isGuest ? "bear" : profileImageId).source}
               className="absolute h-20 w-20"
               resizeMode="contain"
             />
-          </View>
+            <View className="absolute -bottom-2 -right-2 h-6 w-6 items-center justify-center rounded-full border border-primary bg-white">
+              <RefreshCw size={14} color={PRIMARY} strokeWidth={2.5} />
+            </View>
+          </Pressable>
 
           {/* 닉네임 */}
           {/* 닉네임 영역 */}
@@ -247,6 +313,26 @@ export default function Mypage() {
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
             </TouchableOpacity>
 
+            {/* 음료 도감 */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="음료 도감 열기"
+              onPress={() => router.push("/mypage/beverages")}
+              className={`h-16 flex-row items-center px-5 ${
+                !isGuest ? "border-b-2 border-primary" : ""
+              }`}
+            >
+              <Image
+                source={require("../../assets/images/Encyclopedia.png")}
+                className="absolute left-5 h-[28px] w-[28px]"
+                resizeMode="contain"
+              />
+              <Text className="ml-12 flex-1 font-maru text-md text-primary">
+                음료 도감
+              </Text>
+              <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
+            </Pressable>
+
             {!isGuest && (
               <Pressable
                 className="h-16 flex-row items-center px-5"
@@ -274,6 +360,14 @@ export default function Mypage() {
           </Pressable>
         )}
       </View>
+      <ProfileImageModal
+        visible={isProfileImageModalOpen && !isGuest}
+        selectedId={draftProfileImageId}
+        saving={isSavingProfileImage}
+        onSelect={setDraftProfileImageId}
+        onClose={() => { if (!isSavingProfileImage) setIsProfileImageModalOpen(false); }}
+        onConfirm={handleSaveProfileImage}
+      />
       <CustomModal
         visible={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
