@@ -3,6 +3,7 @@ import WidgetKit
 import ActivityKit
 
 private let timerURL = URL(string: "atchagongapp:///homeSetting")!
+private let timerWidgetKind = "AtChaGongTimerV3"
 private let ink = Color(red: 0.09, green: 0.24, blue: 0.36)
 private let ice = Color(red: 0.91, green: 0.95, blue: 0.99)
 
@@ -11,6 +12,33 @@ private struct TimerEntry: TimelineEntry {
   var end: Date?
   var cycleCount = 4
   var needsConfirmation = false
+}
+
+private struct StudyingPenguinImage: View {
+  let width: CGFloat
+  let height: CGFloat
+
+  @ViewBuilder
+  var body: some View {
+    if #available(iOS 18.0, *) {
+      Image("studyingPenguin")
+        .resizable()
+        .interpolation(.none)
+        .widgetAccentedRenderingMode(.fullColor)
+        .scaledToFit()
+        .frame(width: width, height: height)
+        .unredacted()
+        .accessibilityHidden(true)
+    } else {
+      Image("studyingPenguin")
+        .resizable()
+        .interpolation(.none)
+        .scaledToFit()
+        .frame(width: width, height: height)
+        .unredacted()
+        .accessibilityHidden(true)
+    }
+  }
 }
 
 private struct TimerProvider: TimelineProvider {
@@ -27,20 +55,27 @@ private struct TimerProvider: TimelineProvider {
     var entries = [entry]
     if let end = entry.end {
       entries.append(TimerEntry(date: end, needsConfirmation: true))
+      completion(Timeline(entries: entries, policy: .after(end)))
+      return
     }
-    completion(Timeline(entries: entries, policy: .never))
+    completion(
+      Timeline(
+        entries: entries,
+        policy: .after(Date().addingTimeInterval(15))
+      )
+    )
   }
 
   private func readEntry() -> TimerEntry {
     guard let saved = UserDefaults(suiteName: "group.com.atchagong.atchagong.timer")?.dictionary(forKey: "timerDisplay"),
-          let milliseconds = saved["endTime"] as? Double else {
+          let milliseconds = (saved["endTime"] as? NSNumber)?.doubleValue else {
       return TimerEntry(date: Date())
     }
     let end = Date(timeIntervalSince1970: milliseconds / 1000)
     return TimerEntry(
       date: Date(),
       end: end > Date() ? end : nil,
-      cycleCount: saved["cycleCount"] as? Int ?? 4,
+      cycleCount: (saved["cycleCount"] as? NSNumber)?.intValue ?? 4,
       needsConfirmation: end <= Date()
     )
   }
@@ -48,17 +83,16 @@ private struct TimerProvider: TimelineProvider {
 
 private struct TimerWidgetView: View {
   @Environment(\.widgetFamily) private var family
+  @Environment(\.widgetRenderingMode) private var renderingMode
   let entry: TimerEntry
 
   var body: some View {
     ZStack(alignment: .bottomTrailing) {
       if family != .accessoryRectangular {
-        Image("studyingPenguin")
-          .resizable()
-          .interpolation(.none)
-          .scaledToFit()
-          .frame(width: family == .systemMedium ? 112 : 66)
-          .accessibilityHidden(true)
+        StudyingPenguinImage(
+          width: family == .systemMedium ? 112 : 66,
+          height: family == .systemMedium ? 112 : 66
+        )
       }
 
       VStack(alignment: .leading, spacing: family == .accessoryRectangular ? 2 : 7) {
@@ -86,9 +120,14 @@ private struct TimerWidgetView: View {
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .foregroundStyle(family == .accessoryRectangular ? Color.primary : ink)
+    .foregroundStyle(
+      family == .accessoryRectangular || renderingMode != .fullColor
+        ? Color.primary
+        : ink
+    )
     .widgetURL(timerURL)
     .timerWidgetBackground()
+    .unredacted()
   }
 }
 
@@ -104,10 +143,11 @@ private extension View {
 }
 
 struct AtChaGongTimerWidget: Widget {
-  let kind = "AtChaGongTimer"
+  let kind = timerWidgetKind
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: TimerProvider()) { entry in
       TimerWidgetView(entry: entry)
+        .unredacted()
     }
     .configurationDisplayName("앗차공 타이머")
     .description("집중·휴식 세션의 남은 시간을 확인해요.")
@@ -142,6 +182,7 @@ struct AtChaGongLiveActivity: Widget {
           Text(context.isStale ? "완료 여부는 앱에서 확인해 주세요" : "세션 남은 시간").font(.caption)
         }
         Spacer(minLength: 0)
+        StudyingPenguinImage(width: 78, height: 78)
       }
       .padding(18)
       .foregroundStyle(ink)
@@ -151,7 +192,10 @@ struct AtChaGongLiveActivity: Widget {
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          Label("앗차공", systemImage: "timer")
+          HStack(spacing: 6) {
+            StudyingPenguinImage(width: 28, height: 28)
+            Text("앗차공")
+          }
         }
         DynamicIslandExpandedRegion(.trailing) {
           Text("\(context.state.cycleCount)사이클").font(.caption)
@@ -163,11 +207,11 @@ struct AtChaGongLiveActivity: Widget {
           }
         }
       } compactLeading: {
-        Image(systemName: "timer")
+        StudyingPenguinImage(width: 24, height: 24)
       } compactTrailing: {
         ActivityCountdown(context: context).font(.caption).frame(maxWidth: 64)
       } minimal: {
-        Image(systemName: "timer")
+        StudyingPenguinImage(width: 20, height: 20)
       }
       .widgetURL(timerURL)
     }

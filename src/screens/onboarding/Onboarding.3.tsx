@@ -12,7 +12,7 @@ import {
 import { completeOnboardingWithAlert } from "./onboardingCompletion";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/IceCup1-4.png");
+const ICE_CUP = require("../../assets/images/IceCupCurrentPreview.png");
 
 export default function Onboarding3() {
   return (
@@ -43,18 +43,35 @@ export default function Onboarding3() {
           </Pressable>
 
           <View className="items-center">
-            <Image
-              source={ICE_CUP}
-              className="h-[210px] w-[174px]"
-              resizeMode="contain"
-            />
+            <View className="h-[270px] w-[250px] items-center justify-center">
+              <Text className="font-maru text-[15px] tracking-[3px] text-gray-300">
+                NO. 001
+              </Text>
+              <View className="mt-2 bg-[#E3F0E9] px-3 py-1">
+                <Text className="font-maru text-[13px] text-[#416D58]">
+                  수집
+                </Text>
+              </View>
+              <Image
+                source={ICE_CUP}
+                className="mt-2 h-[150px] w-[104px]"
+                resizeMode="contain"
+                fadeDuration={0}
+              />
+              <Text className="mt-1 font-maru text-[18px] text-primary">
+                얼음컵
+              </Text>
+              <Text className="mt-1 font-maru text-[10px] tracking-[3px] text-gray-300">
+                COLLECTED
+              </Text>
+            </View>
 
             <Text className="mt-[18px] text-center font-maru text-[28px] leading-[36px] text-primary">
-              다 녹으면, {"\n"}얼음으로 가득채워요
+              나만의 음료 도감을{"\n"}채워보세요
             </Text>
             <Text className="mt-[18px] text-center font-maru text-[16px] leading-[24px] text-gray-300">
-              집중이 끝나면 휴식 시간 동안{"\n"}새 얼음이 만들어져요{"\n"}
-              녹이고 채우며 리듬을 만들어요.
+              집중으로 모은 코인으로 음료를 구매하고{"\n"}
+              도감에 하나씩 기록해 보세요
             </Text>
           </View>
 

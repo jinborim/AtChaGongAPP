@@ -29,8 +29,12 @@ import {
   getActiveTimerSession,
   setActiveTimerSession,
 } from "@/src/features/timer/activeTimerSession";
+import { makeTimerSurfaceSnapshot } from "@/src/features/timer/timerSurfaceSnapshot";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { prepareTimerSurfaces } from "@/src/features/timer/timerSurfaces";
+import {
+  prepareTimerSurfaces,
+  syncTimerSurfaces,
+} from "@/src/features/timer/timerSurfaces";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -66,6 +70,42 @@ import {
 
 const DEFAULT_NICKNAME = "사용자";
 const SEOUL_UTC_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
+let pendingAttendanceReward: AttendanceReward | null = null;
+let attendanceRequestPromise: Promise<AttendanceReward> | null = null;
+let attendanceRequestGeneration = 0;
+
+function requestAttendanceReward() {
+  if (pendingAttendanceReward) {
+    return Promise.resolve(pendingAttendanceReward);
+  }
+
+  if (attendanceRequestPromise) {
+    return attendanceRequestPromise;
+  }
+
+  const generation = attendanceRequestGeneration;
+  const request = attendToday()
+    .then((reward) => {
+      if (generation === attendanceRequestGeneration) {
+        pendingAttendanceReward = reward;
+      }
+      return reward;
+    })
+    .finally(() => {
+      if (attendanceRequestPromise === request) {
+        attendanceRequestPromise = null;
+      }
+    });
+
+  attendanceRequestPromise = request;
+  return request;
+}
+
+function resetAttendanceRequestState() {
+  attendanceRequestGeneration += 1;
+  pendingAttendanceReward = null;
+  attendanceRequestPromise = null;
+}
 
 function getMillisecondsUntilNextSeoulMidnight(now = Date.now()) {
   const seoulNow = new Date(now + SEOUL_UTC_OFFSET_MILLISECONDS);
@@ -182,6 +222,12 @@ export default function StudyScreen() {
     isRunningRef.current = isRunning;
   }, [isRunning]);
 
+  useEffect(() => {
+    if (showAttendanceModal && attendanceReward) {
+      pendingAttendanceReward = null;
+    }
+  }, [attendanceReward, showAttendanceModal]);
+
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -207,6 +253,7 @@ export default function StudyScreen() {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      resetAttendanceRequestState();
       setShowAttendanceModal(false);
       setAttendanceReward(null);
       setCoinBalance(0);
@@ -214,15 +261,11 @@ export default function StudyScreen() {
     }
 
     let isActive = true;
-    let isAttendanceRequestInFlight = false;
     let midnightTimer: ReturnType<typeof setTimeout> | undefined;
 
     const processAttendance = async () => {
-      if (isAttendanceRequestInFlight) return;
-      isAttendanceRequestInFlight = true;
-
       try {
-        const reward = await attendToday();
+        const reward = await requestAttendanceReward();
 
         if (!isActive) return;
 
@@ -243,8 +286,6 @@ export default function StudyScreen() {
         } catch (balanceError) {
           console.log("코인 잔액 조회 오류:", balanceError);
         }
-      } finally {
-        isAttendanceRequestInFlight = false;
       }
     };
 
@@ -399,6 +440,79 @@ export default function StudyScreen() {
   );
 
   useEffect(() => {
+    const startedAt = timerStartedAtRef.current;
+
+    if (!isRunning || endTime === null || startedAt === null) {
+      syncTimerSurfaces(null);
+      return;
+    }
+
+    syncTimerSurfaces(
+      makeTimerSurfaceSnapshot(
+        {
+          phase: timerPhase,
+          endTime,
+          currentCycle,
+          cycleCount,
+          startedAt,
+        },
+        getFocusDurationMilliseconds(focusMinutes),
+        getBreakDurationMilliseconds(breakMinutes),
+      ),
+    );
+  }, [
+    breakMinutes,
+    currentCycle,
+    cycleCount,
+    endTime,
+    focusMinutes,
+    isRunning,
+    timerPhase,
+  ]);
+
+  useEffect(() => {
+    const syncCurrentTimer = () => {
+      const startedAt = timerStartedAtRef.current;
+
+      if (!isRunning || endTime === null || startedAt === null) {
+        syncTimerSurfaces(null, true);
+        return;
+      }
+
+      syncTimerSurfaces(
+        makeTimerSurfaceSnapshot(
+          {
+            phase: timerPhase,
+            endTime,
+            currentCycle,
+            cycleCount,
+            startedAt,
+          },
+          getFocusDurationMilliseconds(focusMinutes),
+          getBreakDurationMilliseconds(breakMinutes),
+        ),
+        true,
+      );
+    };
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" || nextState === "background") {
+        syncCurrentTimer();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [
+    breakMinutes,
+    currentCycle,
+    cycleCount,
+    endTime,
+    focusMinutes,
+    isRunning,
+    timerPhase,
+  ]);
+
+  useEffect(() => {
     if (!isRunning || endTime === null) return;
 
     const timer = setInterval(() => {
@@ -417,6 +531,7 @@ export default function StudyScreen() {
         if (nextCycle >= cycleCount) {
           clearInterval(timer);
           clearActiveTimerSession();
+          syncTimerSurfaces(null, true);
           clearTimerNotificationIds().catch((error) =>
             console.warn("타이머 알림 ID 정리 실패:", error),
           );
@@ -548,16 +663,25 @@ export default function StudyScreen() {
       setTimerPhase("focus");
       timerStartedAtRef.current = startedAt;
       focusBeverageIdRef.current = selectedBeverageId;
-      setActiveTimerSession({
+      const nextSession = {
         beverageId: focusBeverageIdRef.current,
-        phase: "focus",
+        phase: "focus" as const,
         endTime: nextEndTime,
         currentCycle,
         cycleCount,
         focusMinutes,
         breakMinutes,
         startedAt,
-      });
+      };
+      setActiveTimerSession(nextSession);
+      syncTimerSurfaces(
+        makeTimerSurfaceSnapshot(
+          nextSession,
+          focusDurationMilliseconds,
+          breakDurationMilliseconds,
+        ),
+        true,
+      );
       setEndTime(nextEndTime);
     } finally {
       isStartingRef.current = false;
@@ -575,6 +699,7 @@ export default function StudyScreen() {
 
     try {
       clearActiveTimerSession();
+      syncTimerSurfaces(null, true);
       timerStartedAtRef.current = null;
       setCurrentCycle(MIN_CYCLE_COUNT);
       setTimerPhase("focus");
@@ -601,6 +726,7 @@ export default function StudyScreen() {
     setTimerPhase("focus");
     setRemainingMilliseconds(getFocusDurationMilliseconds(minutes));
     clearActiveTimerSession();
+    syncTimerSurfaces(null, true);
     setShowCompleteModal(false);
   };
 
@@ -727,7 +853,7 @@ export default function StudyScreen() {
             style={{ opacity: canResetTimer ? 0 : 1 }}
           />
           <Image
-            source={require("../../assets/images/ResetButton.png")}
+            source={require("../../assets/images/ResetButtonV2.png")}
             // 원본 이미지의 투명 여백을 감안해 재생 버튼의 실제 테두리 크기에 맞춥니다.
             className="absolute h-[60px] w-[87px]"
             resizeMode="stretch"
@@ -740,6 +866,7 @@ export default function StudyScreen() {
           onClose={() => setShowResetModal(false)}
           onConfirm={resetTimer}
           title="초기화"
+          imageSource={require("../../assets/images/PenguinTimerReset.png")}
           description="사이클을 초기화하시겠습니까?"
           buttonCount={2}
           confirmText="확인"

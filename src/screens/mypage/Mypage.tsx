@@ -548,6 +548,7 @@ export default function Mypage() {
         onClose={() => setIsDeleteAccountModalOpen(false)}
         onConfirm={handleDeleteAccount}
         title="회원탈퇴"
+        imageSource={require("../../assets/images/PenguinWithdrawal.png")}
         description="정말...회원 탈퇴하시겠습니다? 정말요..?"
         buttonCount={2}
         confirmText={isDeletingAccount ? "탈퇴 중" : "회원탈퇴"}
