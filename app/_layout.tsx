@@ -48,6 +48,7 @@ function RootNavigator() {
         <Stack.Screen name="timerSetting" />
         <Stack.Screen name="notice" />
         <Stack.Screen name="mypage/privacy" />
+        <Stack.Screen name="mypage/notifications" />
       </Stack.Protected>
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="(onboard)" />

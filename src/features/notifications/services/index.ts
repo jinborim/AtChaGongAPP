@@ -10,3 +10,7 @@ export {
   scheduleTimerNotifications,
 } from "./timerNotificationService";
 export type { ScheduleTimerNotificationsParams } from "./timerNotificationService";
+export {
+  areTimerNotificationsEnabled,
+  updateTimerNotificationsEnabled,
+} from "./notificationSettingsService";
