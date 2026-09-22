@@ -7,6 +7,7 @@ import Svg, {
   Image as SvgImage,
   Path,
   Rect,
+  Use,
 } from "react-native-svg";
 import {
   ICE_CUP_SPRITES,
@@ -164,6 +165,13 @@ export default function MeltingIceCup({
       pointerEvents="none"
     >
       <Defs>
+        <SvgImage
+          id={`${id}-ice-atlas`}
+          href={iceSource}
+          width={ICE_ATLAS_WIDTH}
+          height={ICE_ATLAS_HEIGHT}
+          preserveAspectRatio="none"
+        />
         <ClipPath id={`${id}-interior`}>
           <Path d={CUP_INTERIOR} />
         </ClipPath>
@@ -285,12 +293,7 @@ export default function MeltingIceCup({
                 opacity={opacity}
               >
                 <G clipPath={`url(#${id}-sprite-${index})`}>
-                  <SvgImage
-                    href={iceSource}
-                    width={ICE_ATLAS_WIDTH}
-                    height={ICE_ATLAS_HEIGHT}
-                    preserveAspectRatio="none"
-                  />
+                  <Use href={`#${id}-ice-atlas`} />
                 </G>
               </G>
             );
