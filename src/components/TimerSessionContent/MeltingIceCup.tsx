@@ -7,6 +7,7 @@ import Svg, {
   Image as SvgImage,
   Path,
   Rect,
+  Use,
 } from "react-native-svg";
 import {
   ICE_CUP_SPRITES,
@@ -20,7 +21,9 @@ const VIEWBOX_HEIGHT = 432;
 const ICE_ATLAS_WIDTH = 1448;
 const ICE_ATLAS_HEIGHT = 1086;
 const INITIAL_SURFACE_Y = 374;
-const FINAL_SURFACE_Y = 176;
+// IceCupWaterFlat.png의 실제 수면 시작점에 맞춰 코드로 그리는 웨이브가
+// PNG 수면보다 위로 떠 보이지 않게 한다.
+const FINAL_SURFACE_Y = 192;
 const CUP_INTERIOR =
   "M40 78 Q162 104 284 78 L260 372 Q162 410 64 372 Z";
 const CUP_OPENING = "M40 78 Q162 22 284 78 Q162 108 40 78 Z";
@@ -162,6 +165,20 @@ export default function MeltingIceCup({
       pointerEvents="none"
     >
       <Defs>
+        <SvgImage
+          id={`${id}-glass`}
+          href={glassSource}
+          width={VIEWBOX_WIDTH}
+          height={VIEWBOX_HEIGHT}
+          preserveAspectRatio="none"
+        />
+        <SvgImage
+          id={`${id}-ice-atlas`}
+          href={iceSource}
+          width={ICE_ATLAS_WIDTH}
+          height={ICE_ATLAS_HEIGHT}
+          preserveAspectRatio="none"
+        />
         <ClipPath id={`${id}-interior`}>
           <Path d={CUP_INTERIOR} />
         </ClipPath>
@@ -193,12 +210,7 @@ export default function MeltingIceCup({
       </Defs>
 
       <G transform={CUP_TRANSFORM}>
-        <SvgImage
-          href={glassSource}
-          width={VIEWBOX_WIDTH}
-          height={VIEWBOX_HEIGHT}
-          preserveAspectRatio="none"
-        />
+        <Use href={`#${id}-glass`} />
 
         <G clipPath={`url(#${id}-interior)`}>
           <Path d={CUP_INTERIOR} fill="#e5edf6" opacity={0.42} />
@@ -283,40 +295,19 @@ export default function MeltingIceCup({
                 opacity={opacity}
               >
                 <G clipPath={`url(#${id}-sprite-${index})`}>
-                  <SvgImage
-                    href={iceSource}
-                    width={ICE_ATLAS_WIDTH}
-                    height={ICE_ATLAS_HEIGHT}
-                    preserveAspectRatio="none"
-                  />
+                  <Use href={`#${id}-ice-atlas`} />
                 </G>
               </G>
             );
           })}
         </G>
 
-        <SvgImage
-          href={glassSource}
-          width={VIEWBOX_WIDTH}
-          height={VIEWBOX_HEIGHT}
-          preserveAspectRatio="none"
-          opacity={0.3}
-        />
+        <Use href={`#${id}-glass`} opacity={0.3} />
         <G clipPath={`url(#${id}-glass-top)`}>
-          <SvgImage
-            href={glassSource}
-            width={VIEWBOX_WIDTH}
-            height={VIEWBOX_HEIGHT}
-            preserveAspectRatio="none"
-          />
+          <Use href={`#${id}-glass`} />
         </G>
         <G clipPath={`url(#${id}-glass-bottom)`}>
-          <SvgImage
-            href={glassSource}
-            width={VIEWBOX_WIDTH}
-            height={VIEWBOX_HEIGHT}
-            preserveAspectRatio="none"
-          />
+          <Use href={`#${id}-glass`} />
         </G>
 
         {fill > 0.002 && (

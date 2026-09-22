@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
-  Image,
   ImageBackground,
   Pressable,
   SafeAreaView,
@@ -10,9 +9,9 @@ import {
   View,
 } from "react-native";
 import { completeOnboardingWithAlert } from "./onboardingCompletion";
+import OnboardingIceCup from "./OnboardingIceCup";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/IceCup1-1.png");
 
 export default function Onboarding1() {
   return (
@@ -43,11 +42,7 @@ export default function Onboarding1() {
           </Pressable>
 
           <View className="items-center">
-            <Image
-              source={ICE_CUP}
-              className="h-[210px] w-[174px]"
-              resizeMode="contain"
-            />
+            <OnboardingIceCup meltProgress={0.2} fillProgress={0.5} />
 
             <Text className="mt-[20px] text-center font-maru text-[28px] leading-[36px] text-primary">
               얼음이 녹는{"\n"}집중 타이머

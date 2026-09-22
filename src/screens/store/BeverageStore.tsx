@@ -1,16 +1,28 @@
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import CustomModal from "@/src/components/Modal/CustomModal";
+import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
 import Image from "@/src/components/CachedImage/CachedImage";
-import { useState } from "react";
 import {
-  SAMPLE_BEVERAGES,
   BEVERAGE_CATEGORIES,
+  findBeveragePreviewTemplate,
   type BeverageCategory,
   getBeverageImageStyle,
   type BeveragePreview,
 } from "@/src/features/beverages/sampleBeverages";
-import { useRouter } from "expo-router";
 import {
+  getSaleBeverages,
+  getOwnedBeverages,
+  purchaseBeverage,
+  type SaleBeverage,
+} from "@/src/features/beverages/beverageApi";
+import { ApiError } from "@/src/api";
+import { useAuth } from "@/src/features/auth";
+import { getCoinBalance } from "@/src/features/coin";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  Alert,
+  ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,12 +33,37 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const INK = "#18335E";
 const ACCENTS = ["#DCEEFF", "#FFF3BD", "#FFE1D9", "#E5F4CF"];
-// 화면 구성 확인용 예시 가격입니다. 실제 구매/보유 데이터와 연결하지 않습니다.
-const PREVIEW_COINS: Record<string, number> = {
-  "preview-lemonade": 100,
-  "preview-grapefruit-ade": 100,
-  "preview-green-grape-ade": 100,
+
+type StoreBeverage = BeveragePreview & {
+  beverageId: number;
+  price: number;
+  saleEndsAt: string | null;
 };
+
+type PurchaseNotice = {
+  title: string;
+  description: string;
+  imageSource?: ImageSourcePropType;
+};
+
+function toStoreBeverage(
+  beverage: SaleBeverage,
+  ownedBeverageIds: ReadonlySet<number>,
+): StoreBeverage {
+  const preview = findBeveragePreviewTemplate(beverage);
+
+  return {
+    ...preview,
+    id: String(beverage.beverageId),
+    beverageId: beverage.beverageId,
+    name: beverage.name,
+    isOwned:
+      beverage.price === 0 || ownedBeverageIds.has(beverage.beverageId),
+    isLimited: beverage.isLimited,
+    price: beverage.price,
+    saleEndsAt: beverage.saleEndsAt,
+  };
+}
 
 function DrinkImage({ beverage }: { beverage: BeveragePreview }) {
   return (
@@ -60,9 +97,144 @@ function DrinkImage({ beverage }: { beverage: BeveragePreview }) {
 
 export default function BeverageStore() {
   const router = useRouter();
-  const [purchaseBeverage, setPurchaseBeverage] = useState<BeveragePreview | null>(null);
+  const { isAuthenticated } = useAuth();
+  const [purchaseTarget, setPurchaseTarget] = useState<StoreBeverage | null>(null);
+  const [purchaseNotice, setPurchaseNotice] = useState<PurchaseNotice | null>(null);
+  const [isPurchaseNoticeOpen, setIsPurchaseNoticeOpen] = useState(false);
+  const [isPurchaseLoginPromptOpen, setIsPurchaseLoginPromptOpen] =
+    useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [category, setCategory] = useState<BeverageCategory>("all");
-  const products = SAMPLE_BEVERAGES.filter((beverage) =>
+  const [saleBeverages, setSaleBeverages] = useState<StoreBeverage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [coinBalance, setCoinBalance] = useState<number | null>(null);
+
+  const loadSaleBeverages = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+
+    try {
+      const beverages = await getSaleBeverages();
+      let ownedBeverageIds = new Set<number>();
+
+      try {
+        const ownedBeverages = await getOwnedBeverages();
+        ownedBeverageIds = new Set(
+          ownedBeverages.map((beverage) => beverage.beverageId),
+        );
+      } catch (error) {
+        console.log("판매 음료 보유 여부 조회 오류:", error);
+      }
+
+      setSaleBeverages(
+        beverages.map((beverage) =>
+          toStoreBeverage(beverage, ownedBeverageIds),
+        ),
+      );
+    } catch (error) {
+      console.log("판매 음료 목록 조회 오류:", error);
+      setSaleBeverages([]);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadSaleBeverages();
+
+      if (!isAuthenticated) {
+        setCoinBalance(0);
+        return;
+      }
+
+      let active = true;
+
+      getCoinBalance()
+        .then((response) => {
+          if (active) setCoinBalance(response.balance);
+        })
+        .catch((error) => {
+          console.log("코인 잔액 조회 오류:", error);
+          if (active) setCoinBalance(null);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [isAuthenticated, loadSaleBeverages]),
+  );
+
+  const handlePurchase = useCallback(async () => {
+    if (!purchaseTarget || isPurchasing) return;
+
+    if (!isAuthenticated) {
+      setPurchaseTarget(null);
+      setIsPurchaseLoginPromptOpen(true);
+      return;
+    }
+
+    setIsPurchasing(true);
+
+    try {
+      const purchase = await purchaseBeverage(purchaseTarget.beverageId);
+
+      setCoinBalance(purchase.balance);
+      setSaleBeverages((current) =>
+        current.map((beverage) =>
+          beverage.beverageId === purchase.beverageId
+            ? { ...beverage, isOwned: true }
+            : beverage,
+        ),
+      );
+      setPurchaseTarget(null);
+      setPurchaseNotice({
+        title: "구매 완료",
+        description: `${purchase.name} 구매가 완료되었습니다.\n남은 코인: ${purchase.balance.toLocaleString("ko-KR")}코인`,
+        imageSource: require("../../assets/images/PenguinPurchaseComplete.png"),
+      });
+      setIsPurchaseNoticeOpen(true);
+    } catch (error) {
+      setPurchaseTarget(null);
+
+      if (error instanceof ApiError) {
+        switch (error.code) {
+          case "INSUFFICIENT_COIN":
+            setPurchaseNotice({
+              title: "코인이 부족해요",
+              description: "보유 코인이 부족합니다.",
+              imageSource: require("../../assets/images/PenguinNoCoin.png"),
+            });
+            setIsPurchaseNoticeOpen(true);
+            break;
+          case "BEVERAGE_ALREADY_OWNED":
+            setSaleBeverages((current) =>
+              current.map((beverage) =>
+                beverage.beverageId === purchaseTarget.beverageId
+                  ? { ...beverage, isOwned: true }
+                  : beverage,
+              ),
+            );
+            Alert.alert("이미 보유한 음료예요", error.message);
+            break;
+          case "DEFAULT_BEVERAGE_PURCHASE_NOT_ALLOWED":
+          case "BEVERAGE_NOT_ON_SALE":
+            Alert.alert("구매할 수 없어요", error.message);
+            break;
+          default:
+            Alert.alert("구매 실패", error.message);
+        }
+      } else {
+        Alert.alert("구매 실패", "잠시 후 다시 시도해 주세요.");
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  }, [isAuthenticated, isPurchasing, purchaseTarget]);
+
+  const products = saleBeverages.filter((beverage) =>
     category === "all" || (category === "limited" ? beverage.isLimited : beverage.category === category),
   );
   const productRows = Array.from(
@@ -75,7 +247,15 @@ export default function BeverageStore() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>음료 상점</Text>
         <Text style={styles.headerSubtitle}>오늘의 집중에 시원함 한 잔</Text>
-        <View style={styles.balanceCard} accessible accessibilityLabel="보유 코인, 잔액 미확인">
+        <View
+          style={styles.balanceCard}
+          accessible
+          accessibilityLabel={
+            coinBalance === null
+              ? "보유 코인, 잔액 미확인"
+              : `보유 코인 ${coinBalance.toLocaleString("ko-KR")}개`
+          }
+        >
           <Text style={styles.balanceLabel}>보유 코인</Text>
           <View style={styles.balanceAmount}>
             <Image
@@ -84,8 +264,11 @@ export default function BeverageStore() {
               contentFit="contain"
               accessible={false}
             />
-            {/* 잔액 API 연결 전에는 실제 보유 금액을 임의로 표시하지 않습니다. */}
-            <Text style={styles.balanceValue}>— 코인</Text>
+            <Text style={styles.balanceValue}>
+              {coinBalance === null
+                ? "— 코인"
+                : `${coinBalance.toLocaleString("ko-KR")} 코인`}
+            </Text>
           </View>
         </View>
       </View>
@@ -146,6 +329,24 @@ export default function BeverageStore() {
               <Text style={styles.categorySummaryText}>{BEVERAGE_CATEGORIES.find((item) => item.id === category)?.name} 음료</Text>
               <Text style={styles.categorySummaryText}>{products.length}종</Text>
             </View>
+            {isLoading ? (
+              <View style={styles.statusPanel}>
+                <Text style={styles.statusTitle}>판매 음료를 불러오고 있어요</Text>
+              </View>
+            ) : loadError ? (
+              <View style={styles.statusPanel}>
+                <Text style={styles.statusTitle}>음료 목록을 불러오지 못했어요</Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="판매 음료 목록 다시 불러오기"
+                  onPress={() => void loadSaleBeverages()}
+                  activeOpacity={0.7}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryButtonText}>다시 불러오기</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
             <View style={styles.productGrid}>
               {productRows.map((row) => (
                 <View key={row[0].id} style={styles.productRow}>
@@ -161,7 +362,7 @@ export default function BeverageStore() {
                           {
                             backgroundColor:
                               ACCENTS[
-                                SAMPLE_BEVERAGES.indexOf(beverage) % ACCENTS.length
+                                Math.max(0, beverage.beverageId - 1) % ACCENTS.length
                               ],
                           },
                         ]}
@@ -170,13 +371,22 @@ export default function BeverageStore() {
                       </View>
                       {beverage.isOwned ? (
                         <View style={[styles.priceRow, styles.ownedPriceRow]}>
-                          <Text style={styles.priceText}>기본 지급</Text>
+                          <Text style={styles.priceText}>
+                            {beverage.price === 0 ? "기본 지급" : "구매 완료"}
+                          </Text>
                         </View>
                       ) : (
                       <TouchableOpacity
                         accessibilityRole="button"
-                        accessibilityLabel={`${beverage.name}, ${PREVIEW_COINS[beverage.id].toLocaleString("ko-KR")} 코인, 구매`}
-                        onPress={() => setPurchaseBeverage(beverage)}
+                        accessibilityLabel={`${beverage.name}, ${beverage.price.toLocaleString("ko-KR")} 코인, 구매`}
+                        onPress={() => {
+                          if (!isAuthenticated) {
+                            setIsPurchaseLoginPromptOpen(true);
+                            return;
+                          }
+
+                          setPurchaseTarget(beverage);
+                        }}
                         activeOpacity={0.7}
                         style={styles.purchaseButton}
                       >
@@ -197,7 +407,7 @@ export default function BeverageStore() {
                             accessible={false}
                           />
                         <Text style={[styles.priceText, styles.purchaseButtonText]}>
-                          {`${PREVIEW_COINS[beverage.id].toLocaleString("ko-KR")} 코인`}
+                          {`${beverage.price.toLocaleString("ko-KR")} 코인`}
                         </Text>
                           </View>
                       </TouchableOpacity>
@@ -215,13 +425,16 @@ export default function BeverageStore() {
                 </View>
               ))}
             </View>
-            {products.length === 0 && (
+            )}
+            {!isLoading && !loadError && products.length === 0 && (
               <View style={styles.emptyCategory}>
                 <Text style={styles.emptyCategoryTitle}>아직 등록된 음료가 없어요</Text>
                 <Text style={styles.emptyCategoryHint}>새로운 한정판 음료를 기다려 주세요.</Text>
               </View>
             )}
-            <Text style={styles.comingSoonText}>판매 준비 중</Text>
+            {!isLoading && !loadError && (
+              <Text style={styles.comingSoonText}>현재 판매 중인 음료</Text>
+            )}
           </View>
 
           <View style={styles.collectionSection}>
@@ -249,14 +462,36 @@ export default function BeverageStore() {
       <View pointerEvents="none" style={styles.navBackground} />
       <NavigationBar />
       <CustomModal
-        visible={purchaseBeverage !== null}
-        onClose={() => setPurchaseBeverage(null)}
-        onConfirm={() => setPurchaseBeverage(null)}
+        visible={purchaseTarget !== null}
+        onClose={() => {
+          if (!isPurchasing) setPurchaseTarget(null);
+        }}
+        onConfirm={() => void handlePurchase()}
         title="구매"
-        description="구매하시겠습니까?"
+        imageSource={require("../../assets/images/PenguinPurchase.png")}
+        description={
+          purchaseTarget
+            ? `${purchaseTarget.name}을(를) ${purchaseTarget.price.toLocaleString("ko-KR")}코인에 구매하시겠습니까?`
+            : "구매하시겠습니까?"
+        }
         buttonCount={2}
-        confirmText="확인"
+        confirmText={isPurchasing ? "구매 중..." : "구매"}
         cancelText="취소"
+      />
+      <CustomModal
+        visible={isPurchaseNoticeOpen && purchaseNotice !== null}
+        onClose={() => setIsPurchaseNoticeOpen(false)}
+        onConfirm={() => setIsPurchaseNoticeOpen(false)}
+        title={purchaseNotice?.title ?? "구매 안내"}
+        description={purchaseNotice?.description ?? ""}
+        imageSource={purchaseNotice?.imageSource}
+        buttonCount={1}
+        confirmText="확인"
+      />
+      <LoginRequiredModal
+        visible={isPurchaseLoginPromptOpen}
+        description="음료를 구매하려면 로그인해 주세요."
+        onClose={() => setIsPurchaseLoginPromptOpen(false)}
       />
     </SafeAreaView>
   );
@@ -273,6 +508,10 @@ const styles = StyleSheet.create({
   emptyCategory: { minHeight: 200, alignItems: "center", justifyContent: "center", padding: 16, gap: 10 },
   emptyCategoryTitle: { fontFamily: "Mulmaru", fontSize: 16, color: INK, textAlign: "center" },
   emptyCategoryHint: { fontFamily: "Mulmaru", fontSize: 12, color: "#6C8097", textAlign: "center" },
+  statusPanel: { minHeight: 200, alignItems: "center", justifyContent: "center", padding: 20, gap: 16 },
+  statusTitle: { fontFamily: "Mulmaru", fontSize: 14, color: "#6C8097", textAlign: "center" },
+  retryButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: 18, backgroundColor: INK, borderWidth: 2, borderColor: "#102744" },
+  retryButtonText: { fontFamily: "Mulmaru", fontSize: 14, color: "#FFFFFF" },
   screen: { flex: 1, backgroundColor: "#E8F3FC" },
   header: { alignItems: "center", paddingTop: 16, paddingBottom: 10 },
   headerTitle: { fontFamily: "Mulmaru", fontSize: 28, color: INK },

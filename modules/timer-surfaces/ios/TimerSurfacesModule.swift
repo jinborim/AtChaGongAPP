@@ -27,10 +27,13 @@ private final class TimerSurfaceController {
   static let shared = TimerSurfaceController()
   private let group = "group.com.atchagong.atchagong.timer"
   private let key = "timerDisplay"
+  private let widgetKind = "AtChaGongTimerV3"
 
   func reset() async {
-    UserDefaults(suiteName: group)?.removeObject(forKey: key)
-    WidgetCenter.shared.reloadTimelines(ofKind: "AtChaGongTimer")
+    let defaults = UserDefaults(suiteName: group)
+    defaults?.removeObject(forKey: key)
+    defaults?.synchronize()
+    WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
     if #available(iOS 16.2, *) {
       for activity in Activity<TimerActivityAttributes>.activities {
         await activity.end(nil, dismissalPolicy: .immediate)
@@ -40,12 +43,14 @@ private final class TimerSurfaceController {
 
   func update(_ snapshot: TimerDisplaySnapshot) async throws {
     // Shared storage is only read by the widget extension, never to restore an app session.
-    UserDefaults(suiteName: group)?.set([
+    let defaults = UserDefaults(suiteName: group)
+    defaults?.set([
       "sessionId": snapshot.sessionId,
       "endTime": snapshot.endTime,
       "cycleCount": snapshot.cycleCount
     ], forKey: key)
-    WidgetCenter.shared.reloadTimelines(ofKind: "AtChaGongTimer")
+    defaults?.synchronize()
+    WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 
     guard #available(iOS 16.2, *) else { return }
     let end = Date(timeIntervalSince1970: snapshot.endTime / 1000)

@@ -13,18 +13,21 @@ let initialized = false;
 let lastSnapshot: string | undefined;
 let work: Promise<void> = Promise.resolve();
 
-function enqueue(action: () => Promise<void>) {
-  work = work.then(action).catch((error: unknown) => {
-    // Retry on an explicit foreground refresh, not on every 50 ms timer tick.
-    console.warn("타이머 위젯 동기화 실패:", error);
-  });
+function enqueue(action: () => Promise<void>, snapshotKey: string) {
+  work = work
+    .then(action)
+    .then(() => {
+      lastSnapshot = snapshotKey;
+    })
+    .catch((error: unknown) => {
+      // Leave the snapshot retryable when native persistence fails.
+      console.warn("타이머 위젯 동기화 실패:", error);
+    });
 }
 
 export function initializeTimerSurfaces() {
   if (initialized || !native) return;
   initialized = true;
-  // A new JS runtime never restores the display snapshot as an active session.
-  enqueue(() => native.reset());
 }
 
 export function syncTimerSurfaces(snapshot: TimerSurfaceSnapshot | null, force = false) {
@@ -32,8 +35,7 @@ export function syncTimerSurfaces(snapshot: TimerSurfaceSnapshot | null, force =
   initializeTimerSurfaces();
   const key = JSON.stringify(snapshot);
   if (!force && lastSnapshot === key) return;
-  lastSnapshot = key;
-  enqueue(() => (snapshot ? native.update(snapshot) : native.reset()));
+  enqueue(() => (snapshot ? native.update(snapshot) : native.reset()), key);
 }
 
 export async function prepareTimerSurfaces() {

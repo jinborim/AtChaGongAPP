@@ -26,3 +26,23 @@ export type CompleteOnboardingResponse = {
 export type DeleteMeResponse = {
   message: string;
 };
+
+export type UserProfile = {
+  profileId: number;
+  profileImg: string;
+  name: string;
+};
+
+export type ProfileImageSummary = {
+  profileId: number;
+  imgUrl: string;
+};
+
+export type UpdateProfileRequest = {
+  profileId: number;
+};
+
+export type UpdateProfileResponse = {
+  profileId: number;
+  imgUrl: string;
+};

@@ -13,5 +13,6 @@ export const CYCLE_COUNT_STEP = 1;
 export const getFocusDurationMilliseconds = (focusMinutes: number) =>
   focusMinutes * 60 * 1000;
 
-export const getBreakDurationMilliseconds = () =>
-  BREAK_MINUTES * 60 * 1000;
+export const getBreakDurationMilliseconds = (
+  breakMinutes = BREAK_MINUTES,
+) => breakMinutes * 60 * 1000;
