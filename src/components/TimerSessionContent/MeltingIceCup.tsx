@@ -166,6 +166,13 @@ export default function MeltingIceCup({
     >
       <Defs>
         <SvgImage
+          id={`${id}-glass`}
+          href={glassSource}
+          width={VIEWBOX_WIDTH}
+          height={VIEWBOX_HEIGHT}
+          preserveAspectRatio="none"
+        />
+        <SvgImage
           id={`${id}-ice-atlas`}
           href={iceSource}
           width={ICE_ATLAS_WIDTH}
@@ -203,12 +210,7 @@ export default function MeltingIceCup({
       </Defs>
 
       <G transform={CUP_TRANSFORM}>
-        <SvgImage
-          href={glassSource}
-          width={VIEWBOX_WIDTH}
-          height={VIEWBOX_HEIGHT}
-          preserveAspectRatio="none"
-        />
+        <Use href={`#${id}-glass`} />
 
         <G clipPath={`url(#${id}-interior)`}>
           <Path d={CUP_INTERIOR} fill="#e5edf6" opacity={0.42} />
@@ -300,28 +302,12 @@ export default function MeltingIceCup({
           })}
         </G>
 
-        <SvgImage
-          href={glassSource}
-          width={VIEWBOX_WIDTH}
-          height={VIEWBOX_HEIGHT}
-          preserveAspectRatio="none"
-          opacity={0.3}
-        />
+        <Use href={`#${id}-glass`} opacity={0.3} />
         <G clipPath={`url(#${id}-glass-top)`}>
-          <SvgImage
-            href={glassSource}
-            width={VIEWBOX_WIDTH}
-            height={VIEWBOX_HEIGHT}
-            preserveAspectRatio="none"
-          />
+          <Use href={`#${id}-glass`} />
         </G>
         <G clipPath={`url(#${id}-glass-bottom)`}>
-          <SvgImage
-            href={glassSource}
-            width={VIEWBOX_WIDTH}
-            height={VIEWBOX_HEIGHT}
-            preserveAspectRatio="none"
-          />
+          <Use href={`#${id}-glass`} />
         </G>
 
         {fill > 0.002 && (
