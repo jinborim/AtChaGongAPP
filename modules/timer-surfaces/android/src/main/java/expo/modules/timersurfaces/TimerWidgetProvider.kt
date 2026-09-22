@@ -75,14 +75,18 @@ internal object TimerDisplay {
     val value = snapshot
     val remaining = (value?.endTime?.toLong() ?: 0L) - System.currentTimeMillis()
     val running = value != null && remaining > 0
+    val phaseLabel = if (value?.phase == "break") "휴식" else "집중"
     val views = RemoteViews(context.packageName, R.layout.timer_widget).apply {
       setOnClickPendingIntent(R.id.timer_root, openApp(context))
-      setTextViewText(R.id.timer_title, if (running) "집중·휴식 ${value!!.cycleCount}사이클" else "집중할 준비가 되었나요?")
+      setTextViewText(
+        R.id.timer_title,
+        if (running) "$phaseLabel ${value!!.currentCycle}/${value.cycleCount}사이클" else "집중할 준비가 되었나요?"
+      )
       setViewVisibility(R.id.timer_countdown, if (running) View.VISIBLE else View.GONE)
       setChronometer(R.id.timer_countdown, SystemClock.elapsedRealtime() + maxOf(0L, remaining), null, running)
       setChronometerCountDown(R.id.timer_countdown, true)
       setTextViewText(R.id.timer_hint, when {
-        running -> "세션 남은 시간 · 눌러서 앱 열기"
+        running -> "$phaseLabel 남은 시간 · 눌러서 앱 열기"
         value != null -> "앱에서 완료 여부를 확인해 주세요"
         else -> "눌러서 타이머 시작"
       })
@@ -96,6 +100,7 @@ internal object TimerDisplay {
 
   private fun showNotification(context: Context, value: TimerDisplaySnapshot, remaining: Long) {
     val manager = context.getSystemService(NotificationManager::class.java)
+    val phaseLabel = if (value.phase == "break") "휴식" else "집중"
     if (Build.VERSION.SDK_INT >= 26) {
       manager.createNotificationChannel(NotificationChannel(CHANNEL, "진행 중인 타이머", NotificationManager.IMPORTANCE_LOW).apply {
         description = "잠금화면에서 집중·휴식 세션의 남은 시간을 표시합니다"
@@ -107,8 +112,8 @@ internal object TimerDisplay {
     @Suppress("DEPRECATION")
     val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else Notification.Builder(context)
     builder.setSmallIcon(R.drawable.timer_notification_icon)
-      .setContentTitle("앗차공 · 집중·휴식 ${value.cycleCount}사이클")
-      .setContentText("세션 남은 시간 · 눌러서 앱에서 확인")
+      .setContentTitle("앗차공 · $phaseLabel ${value.currentCycle}/${value.cycleCount}사이클")
+      .setContentText("$phaseLabel 남은 시간 · 눌러서 앱에서 확인")
       .setContentIntent(openApp(context))
       .setCategory(Notification.CATEGORY_PROGRESS)
       .setVisibility(Notification.VISIBILITY_PUBLIC)

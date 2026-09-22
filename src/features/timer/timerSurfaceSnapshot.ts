@@ -1,5 +1,5 @@
 export type TimerSurfaceSession = {
-  phase: string;
+  phase: "focus" | "break";
   endTime: number;
   currentCycle: number;
   cycleCount: number;
@@ -8,23 +8,39 @@ export type TimerSurfaceSession = {
 
 export type TimerSurfaceSnapshot = {
   sessionId: string;
-  /** Whole session, including the final break. Display only, never a completion record. */
+  /** End of the currently displayed focus or break interval. */
   endTime: number;
+  /** End of the complete focus and break session. */
+  sessionEndTime: number;
+  phase: "focus" | "break";
+  currentCycle: number;
   cycleCount: number;
+  focusDurationMilliseconds: number;
+  breakDurationMilliseconds: number;
 };
 
 export function makeTimerSurfaceSnapshot(
   session: TimerSurfaceSession,
-  focusMilliseconds: number,
-  breakMilliseconds: number,
+  focusDurationMilliseconds: number,
+  breakDurationMilliseconds: number,
 ): TimerSurfaceSnapshot {
-  const remainingCycles = Math.max(0, session.cycleCount - session.currentCycle);
+  const remainingCycleCount = Math.max(
+    0,
+    session.cycleCount - session.currentCycle,
+  );
+  const remainingSessionMilliseconds =
+    remainingCycleCount *
+      (focusDurationMilliseconds + breakDurationMilliseconds) +
+    (session.phase === "focus" ? breakDurationMilliseconds : 0);
+
   return {
     sessionId: session.startedAt,
-    endTime:
-      session.endTime +
-      (session.phase === "focus" ? breakMilliseconds : 0) +
-      remainingCycles * (focusMilliseconds + breakMilliseconds),
+    endTime: session.endTime,
+    sessionEndTime: session.endTime + remainingSessionMilliseconds,
+    phase: session.phase,
+    currentCycle: session.currentCycle,
     cycleCount: session.cycleCount,
+    focusDurationMilliseconds,
+    breakDurationMilliseconds,
   };
 }
