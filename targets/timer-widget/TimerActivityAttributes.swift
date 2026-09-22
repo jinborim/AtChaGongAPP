@@ -5,6 +5,7 @@ import ActivityKit
 struct TimerActivityAttributes: ActivityAttributes {
   struct ContentState: Codable, Hashable {
     var endTime: Double
+    var sessionEndTime: Double?
     var phase: String
     var currentCycle: Int
     var cycleCount: Int

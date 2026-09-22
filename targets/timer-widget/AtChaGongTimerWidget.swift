@@ -267,7 +267,9 @@ private struct ActivityCountdown: View {
   let context: ActivityViewContext<TimerActivityAttributes>
 
   var body: some View {
-    let end = Date(timeIntervalSince1970: context.state.endTime / 1000)
+    let end = Date(
+      timeIntervalSince1970: (context.state.sessionEndTime ?? context.state.endTime) / 1000
+    )
     if context.isStale || end <= Date() {
       Text("앱에서 확인").font(.caption)
     } else {
@@ -285,16 +287,13 @@ struct AtChaGongLiveActivity: Widget {
       HStack(spacing: 16) {
         Image(systemName: "timer").font(.largeTitle)
         VStack(alignment: .leading, spacing: 5) {
-          Text(
-            "앗차공 · \(timerPhaseLabel(context.state.phase)) " +
-            "\(context.state.currentCycle)/\(context.state.cycleCount)사이클"
-          )
+          Text("앗차공 · 집중·휴식 \(context.state.cycleCount)사이클")
           .font(.caption.bold())
           ActivityCountdown(context: context).font(.largeTitle)
           Text(
             context.isStale
-              ? "다음 단계는 앱에서 확인해 주세요"
-              : "\(timerPhaseLabel(context.state.phase)) 남은 시간"
+              ? "전체 세션이 끝났어요. 앱에서 확인해 주세요"
+              : "전체 세션 남은 시간"
           )
           .font(.caption)
         }
@@ -315,16 +314,13 @@ struct AtChaGongLiveActivity: Widget {
           }
         }
         DynamicIslandExpandedRegion(.trailing) {
-          Text(
-            "\(timerPhaseLabel(context.state.phase)) " +
-            "\(context.state.currentCycle)/\(context.state.cycleCount)"
-          )
+          Text("총 \(context.state.cycleCount)사이클")
           .font(.caption)
         }
         DynamicIslandExpandedRegion(.bottom) {
           VStack {
             ActivityCountdown(context: context).font(.title)
-            Text("\(timerPhaseLabel(context.state.phase)) 남은 시간").font(.caption)
+            Text("전체 세션 남은 시간").font(.caption)
           }
         }
       } compactLeading: {

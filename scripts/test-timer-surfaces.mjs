@@ -19,6 +19,7 @@ const session = {
 test("publishes the current focus interval only", () => {
   const snapshot = makeTimerSurfaceSnapshot(session, focus, rest);
   assert.equal(snapshot.endTime, session.endTime);
+  assert.equal(snapshot.sessionEndTime, started + 4 * (focus + rest));
   assert.equal(snapshot.sessionId, session.startedAt);
   assert.equal(snapshot.phase, "focus");
   assert.equal(snapshot.currentCycle, 1);
@@ -34,6 +35,7 @@ test("switching phases or cycles publishes each interval separately", () => {
         endTime: intervalEnd,
       }, focus, rest);
       assert.equal(snapshot.endTime, intervalEnd);
+      assert.equal(snapshot.sessionEndTime, started + 4 * (focus + rest));
       assert.equal(snapshot.phase, phase);
       assert.equal(snapshot.currentCycle, cycle);
     }
@@ -41,12 +43,15 @@ test("switching phases or cycles publishes each interval separately", () => {
 });
 
 test("short QA intervals preserve their own deadline", () => {
-  assert.equal(makeTimerSurfaceSnapshot({ ...session, endTime: started + 5000 }, 5000, 3000).endTime, started + 5000);
+  const snapshot = makeTimerSurfaceSnapshot({ ...session, endTime: started + 5000 }, 5000, 3000);
+  assert.equal(snapshot.endTime, started + 5000);
+  assert.equal(snapshot.sessionEndTime, started + 32_000);
 });
 
 test("the last break ends exactly at the session deadline", () => {
   const lastBreak = { ...session, phase: "break", currentCycle: 4, endTime: started + 120 * 60_000 };
   assert.equal(makeTimerSurfaceSnapshot(lastBreak, focus, rest).endTime, lastBreak.endTime);
+  assert.equal(makeTimerSurfaceSnapshot(lastBreak, focus, rest).sessionEndTime, lastBreak.endTime);
 });
 
 test("expired display snapshots contain no completion or restoration command", () => {
@@ -58,6 +63,7 @@ test("expired display snapshots contain no completion or restoration command", (
     "endTime",
     "focusDurationMilliseconds",
     "phase",
+    "sessionEndTime",
     "sessionId",
   ]);
 });
