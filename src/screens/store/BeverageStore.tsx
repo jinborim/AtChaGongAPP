@@ -100,6 +100,7 @@ export default function BeverageStore() {
   const { isAuthenticated } = useAuth();
   const [purchaseTarget, setPurchaseTarget] = useState<StoreBeverage | null>(null);
   const [purchaseNotice, setPurchaseNotice] = useState<PurchaseNotice | null>(null);
+  const [isPurchaseNoticeOpen, setIsPurchaseNoticeOpen] = useState(false);
   const [isPurchaseLoginPromptOpen, setIsPurchaseLoginPromptOpen] =
     useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -194,6 +195,7 @@ export default function BeverageStore() {
         description: `${purchase.name} 구매가 완료되었습니다.\n남은 코인: ${purchase.balance.toLocaleString("ko-KR")}코인`,
         imageSource: require("../../assets/images/PenguinPurchaseComplete.png"),
       });
+      setIsPurchaseNoticeOpen(true);
     } catch (error) {
       setPurchaseTarget(null);
 
@@ -205,6 +207,7 @@ export default function BeverageStore() {
               description: "보유 코인이 부족합니다.",
               imageSource: require("../../assets/images/PenguinNoCoin.png"),
             });
+            setIsPurchaseNoticeOpen(true);
             break;
           case "BEVERAGE_ALREADY_OWNED":
             setSaleBeverages((current) =>
@@ -476,9 +479,9 @@ export default function BeverageStore() {
         cancelText="취소"
       />
       <CustomModal
-        visible={purchaseNotice !== null}
-        onClose={() => setPurchaseNotice(null)}
-        onConfirm={() => setPurchaseNotice(null)}
+        visible={isPurchaseNoticeOpen && purchaseNotice !== null}
+        onClose={() => setIsPurchaseNoticeOpen(false)}
+        onConfirm={() => setIsPurchaseNoticeOpen(false)}
         title={purchaseNotice?.title ?? "구매 안내"}
         description={purchaseNotice?.description ?? ""}
         imageSource={purchaseNotice?.imageSource}
