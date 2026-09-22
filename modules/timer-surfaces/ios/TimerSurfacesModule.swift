@@ -5,7 +5,11 @@ import WidgetKit
 struct TimerDisplaySnapshot: Record {
   @Field var sessionId: String = ""
   @Field var endTime: Double = 0
+  @Field var phase: String = "focus"
+  @Field var currentCycle: Int = 1
   @Field var cycleCount: Int = 1
+  @Field var focusDurationMilliseconds: Double = 0
+  @Field var breakDurationMilliseconds: Double = 0
 }
 
 public class TimerSurfacesModule: Module {
@@ -27,7 +31,7 @@ private final class TimerSurfaceController {
   static let shared = TimerSurfaceController()
   private let group = "group.com.atchagong.atchagong.timer"
   private let key = "timerDisplay"
-  private let widgetKind = "AtChaGongTimerV3"
+  private let widgetKind = "AtChaGongTimerV4"
 
   func reset() async {
     let defaults = UserDefaults(suiteName: group)
@@ -47,7 +51,11 @@ private final class TimerSurfaceController {
     defaults?.set([
       "sessionId": snapshot.sessionId,
       "endTime": snapshot.endTime,
-      "cycleCount": snapshot.cycleCount
+      "phase": snapshot.phase,
+      "currentCycle": snapshot.currentCycle,
+      "cycleCount": snapshot.cycleCount,
+      "focusDurationMilliseconds": snapshot.focusDurationMilliseconds,
+      "breakDurationMilliseconds": snapshot.breakDurationMilliseconds
     ], forKey: key)
     defaults?.synchronize()
     WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
@@ -61,7 +69,12 @@ private final class TimerSurfaceController {
       return
     }
     let content = ActivityContent(
-      state: TimerActivityAttributes.ContentState(endTime: snapshot.endTime, cycleCount: snapshot.cycleCount),
+      state: TimerActivityAttributes.ContentState(
+        endTime: snapshot.endTime,
+        phase: snapshot.phase,
+        currentCycle: snapshot.currentCycle,
+        cycleCount: snapshot.cycleCount
+      ),
       staleDate: end
     )
     for activity in Activity<TimerActivityAttributes>.activities where activity.attributes.sessionId != snapshot.sessionId {

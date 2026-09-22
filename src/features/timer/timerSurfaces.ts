@@ -14,13 +14,12 @@ let lastSnapshot: string | undefined;
 let work: Promise<void> = Promise.resolve();
 
 function enqueue(action: () => Promise<void>, snapshotKey: string) {
+  // Reserve the state before the native work starts so timer ticks cannot queue
+  // the same update repeatedly while the previous request is still running.
+  lastSnapshot = snapshotKey;
   work = work
     .then(action)
-    .then(() => {
-      lastSnapshot = snapshotKey;
-    })
     .catch((error: unknown) => {
-      // Leave the snapshot retryable when native persistence fails.
       console.warn("타이머 위젯 동기화 실패:", error);
     });
 }
@@ -28,6 +27,7 @@ function enqueue(action: () => Promise<void>, snapshotKey: string) {
 export function initializeTimerSurfaces() {
   if (initialized || !native) return;
   initialized = true;
+  enqueue(() => native.reset(), JSON.stringify(null));
 }
 
 export function syncTimerSurfaces(snapshot: TimerSurfaceSnapshot | null, force = false) {

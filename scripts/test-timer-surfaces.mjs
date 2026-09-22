@@ -16,27 +16,32 @@ const session = {
   startedAt: new Date(started).toISOString(),
 };
 
-test("includes all focus intervals and the final break", () => {
+test("publishes the current focus interval only", () => {
   const snapshot = makeTimerSurfaceSnapshot(session, focus, rest);
-  assert.equal(snapshot.endTime, started + 4 * (focus + rest));
+  assert.equal(snapshot.endTime, session.endTime);
   assert.equal(snapshot.sessionId, session.startedAt);
+  assert.equal(snapshot.phase, "focus");
+  assert.equal(snapshot.currentCycle, 1);
 });
 
-test("switching phases or cycles preserves the same session deadline", () => {
-  const expected = makeTimerSurfaceSnapshot(session, focus, rest);
+test("switching phases or cycles publishes each interval separately", () => {
   for (let cycle = 1; cycle <= 4; cycle++) {
     const cycleStart = started + (cycle - 1) * (focus + rest);
     for (const phase of ["focus", "break"]) {
-      assert.deepEqual(makeTimerSurfaceSnapshot({
+      const intervalEnd = cycleStart + focus + (phase === "break" ? rest : 0);
+      const snapshot = makeTimerSurfaceSnapshot({
         ...session, currentCycle: cycle, phase,
-        endTime: cycleStart + focus + (phase === "break" ? rest : 0),
-      }, focus, rest), expected);
+        endTime: intervalEnd,
+      }, focus, rest);
+      assert.equal(snapshot.endTime, intervalEnd);
+      assert.equal(snapshot.phase, phase);
+      assert.equal(snapshot.currentCycle, cycle);
     }
   }
 });
 
-test("short QA intervals use the same deadline logic", () => {
-  assert.equal(makeTimerSurfaceSnapshot({ ...session, endTime: started + 5000 }, 5000, 3000).endTime, started + 32_000);
+test("short QA intervals preserve their own deadline", () => {
+  assert.equal(makeTimerSurfaceSnapshot({ ...session, endTime: started + 5000 }, 5000, 3000).endTime, started + 5000);
 });
 
 test("the last break ends exactly at the session deadline", () => {
@@ -46,7 +51,15 @@ test("the last break ends exactly at the session deadline", () => {
 
 test("expired display snapshots contain no completion or restoration command", () => {
   const snapshot = makeTimerSurfaceSnapshot(session, focus, rest);
-  assert.deepEqual(Object.keys(snapshot).sort(), ["cycleCount", "endTime", "sessionId"]);
+  assert.deepEqual(Object.keys(snapshot).sort(), [
+    "breakDurationMilliseconds",
+    "currentCycle",
+    "cycleCount",
+    "endTime",
+    "focusDurationMilliseconds",
+    "phase",
+    "sessionId",
+  ]);
 });
 
 test("app and extension ActivityKit schemas stay identical", () => {

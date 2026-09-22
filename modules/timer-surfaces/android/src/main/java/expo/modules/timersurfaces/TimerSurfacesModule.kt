@@ -11,7 +11,11 @@ import expo.modules.kotlin.records.Record
 class TimerDisplaySnapshot : Record {
   @Field var sessionId: String = ""
   @Field var endTime: Double = 0.0
+  @Field var phase: String = "focus"
+  @Field var currentCycle: Int = 1
   @Field var cycleCount: Int = 1
+  @Field var focusDurationMilliseconds: Double = 0.0
+  @Field var breakDurationMilliseconds: Double = 0.0
 }
 
 class TimerSurfacesModule : Module() {
