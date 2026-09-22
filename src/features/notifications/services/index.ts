@@ -1,3 +1,4 @@
+export { registerCurrentFcmToken } from "./deviceTokenService";
 export {
   configureForegroundNotificationHandler,
   ensureTimerNotificationChannel,

@@ -3,17 +3,32 @@ import { useAuth } from "@/src/features/auth";
 import {
   areTimerNotificationsEnabled,
   cancelTimerNotifications,
+  type DeviceTokenRegistration,
   getNotificationSettings,
+  registerCurrentFcmToken,
   type NotificationSettings as NotificationSettingsResponse,
   updateTimerNotificationsEnabled,
 } from "@/src/features/notifications";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, ImageBackground, Switch, Text, View } from "react-native";
+import {
+  Alert,
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 
 const SWITCH_OFF = "#C7CED3";
 const SWITCH_ON = "#73C0FF";
 type NotificationPreferenceKey = "timer" | "dailyReminder" | "seasonalDrink";
+
+type FcmRegistrationTestResult = {
+  token: string;
+  registration: DeviceTokenRegistration;
+};
 
 const SETTING_ITEMS: {
   key: NotificationPreferenceKey;
@@ -44,6 +59,12 @@ export default function NotificationSettings() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasLoadError, setHasLoadError] = useState(false);
+  const [isRegisteringFcmToken, setIsRegisteringFcmToken] = useState(false);
+  const [fcmRegistrationResult, setFcmRegistrationResult] =
+    useState<FcmRegistrationTestResult | null>(null);
+  const [fcmRegistrationError, setFcmRegistrationError] = useState<
+    string | null
+  >(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -116,6 +137,30 @@ export default function NotificationSettings() {
     ? areTimerNotificationsEnabled(settings)
     : false;
 
+  const handleRegisterFcmToken = async () => {
+    if (!isAuthenticated || isRegisteringFcmToken) return;
+
+    setIsRegisteringFcmToken(true);
+    setFcmRegistrationResult(null);
+    setFcmRegistrationError(null);
+
+    try {
+      const result = await registerCurrentFcmToken();
+      setFcmRegistrationResult(result);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "FCM 기기 토큰 등록에 실패했습니다.";
+
+      console.warn("FCM 기기 토큰 등록 실패:", error);
+      setFcmRegistrationError(message);
+      Alert.alert("FCM 기기 토큰 등록 실패", message);
+    } finally {
+      setIsRegisteringFcmToken(false);
+    }
+  };
+
   const getPreferenceValue = (key: NotificationPreferenceKey) => {
     if (key === "timer") return timerNotificationsEnabled;
     if (key === "seasonalDrink") {
@@ -132,8 +177,12 @@ export default function NotificationSettings() {
     >
       <Header title="알림 설정" showBack />
 
-      <View className="mx-8 mt-10">
-        <Text className="text-center font-maru text-sm leading-6 text-primary">
+      <ScrollView
+        className="flex-1 px-8"
+        contentContainerStyle={{ paddingBottom: 48 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text className="mt-10 text-center font-maru text-sm leading-6 text-primary">
           받고 싶은 알림만 선택해 주세요.
         </Text>
 
@@ -188,7 +237,69 @@ export default function NotificationSettings() {
             ))}
           </View>
         </View>
-      </View>
+
+        {__DEV__ && (
+          <View className="mt-8 rounded-2xl border-2 border-primary bg-white/70 p-4">
+            <Text className="font-maru text-sm text-primary">
+              FCM 기기 토큰 등록 테스트
+            </Text>
+            <Text className="mt-2 font-maru text-[11px] leading-5 text-gray-300">
+              알림 권한을 확인하고 Firebase registration token을 서버에
+              등록합니다.
+            </Text>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="FCM 기기 토큰 등록 테스트"
+              disabled={!isAuthenticated || isRegisteringFcmToken}
+              onPress={handleRegisterFcmToken}
+              className={`mt-4 h-11 items-center justify-center rounded-xl ${
+                !isAuthenticated || isRegisteringFcmToken
+                  ? "bg-gray-200"
+                  : "bg-primary"
+              }`}
+            >
+              <Text className="font-maru text-sm text-white">
+                {isRegisteringFcmToken ? "등록 중..." : "FCM 토큰 등록"}
+              </Text>
+            </Pressable>
+
+            {fcmRegistrationResult && (
+              <View className="mt-4 gap-3 rounded-xl bg-white/80 p-3">
+                <View>
+                  <Text className="font-maru text-xs leading-5 text-primary">
+                    FCM token
+                  </Text>
+                  <Text
+                    selectable
+                    className="mt-1 font-mono text-[11px] leading-5 text-gray-700"
+                  >
+                    {fcmRegistrationResult.token}
+                  </Text>
+                </View>
+
+                <View>
+                  <Text className="font-maru text-xs leading-5 text-primary">
+                    서버 응답 data
+                  </Text>
+                  <Text
+                    selectable
+                    className="mt-1 font-mono text-[11px] leading-5 text-gray-700"
+                  >
+                    {JSON.stringify(fcmRegistrationResult.registration, null, 2)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {fcmRegistrationError && (
+              <Text className="mt-4 font-maru text-xs leading-5 text-red-500">
+                {fcmRegistrationError}
+              </Text>
+            )}
+          </View>
+        )}
+      </ScrollView>
     </ImageBackground>
   );
 }
