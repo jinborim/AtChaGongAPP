@@ -5,7 +5,12 @@ import WidgetKit
 struct TimerDisplaySnapshot: Record {
   @Field var sessionId: String = ""
   @Field var endTime: Double = 0
+  @Field var sessionEndTime: Double = 0
+  @Field var phase: String = "focus"
+  @Field var currentCycle: Int = 1
   @Field var cycleCount: Int = 1
+  @Field var focusDurationMilliseconds: Double = 0
+  @Field var breakDurationMilliseconds: Double = 0
 }
 
 public class TimerSurfacesModule: Module {
@@ -27,7 +32,7 @@ private final class TimerSurfaceController {
   static let shared = TimerSurfaceController()
   private let group = "group.com.atchagong.atchagong.timer"
   private let key = "timerDisplay"
-  private let widgetKind = "AtChaGongTimerV3"
+  private let widgetKind = "AtChaGongTimerV4"
 
   func reset() async {
     let defaults = UserDefaults(suiteName: group)
@@ -47,22 +52,33 @@ private final class TimerSurfaceController {
     defaults?.set([
       "sessionId": snapshot.sessionId,
       "endTime": snapshot.endTime,
-      "cycleCount": snapshot.cycleCount
+      "phase": snapshot.phase,
+      "currentCycle": snapshot.currentCycle,
+      "cycleCount": snapshot.cycleCount,
+      "focusDurationMilliseconds": snapshot.focusDurationMilliseconds,
+      "breakDurationMilliseconds": snapshot.breakDurationMilliseconds
     ], forKey: key)
     defaults?.synchronize()
     WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 
     guard #available(iOS 16.2, *) else { return }
-    let end = Date(timeIntervalSince1970: snapshot.endTime / 1000)
-    guard end > Date() else {
+    let sessionEndTime = max(snapshot.endTime, snapshot.sessionEndTime)
+    let sessionEnd = Date(timeIntervalSince1970: sessionEndTime / 1000)
+    guard sessionEnd > Date() else {
       for activity in Activity<TimerActivityAttributes>.activities {
         await activity.end(nil, dismissalPolicy: .immediate)
       }
       return
     }
     let content = ActivityContent(
-      state: TimerActivityAttributes.ContentState(endTime: snapshot.endTime, cycleCount: snapshot.cycleCount),
-      staleDate: end
+      state: TimerActivityAttributes.ContentState(
+        endTime: snapshot.endTime,
+        sessionEndTime: sessionEndTime,
+        phase: snapshot.phase,
+        currentCycle: snapshot.currentCycle,
+        cycleCount: snapshot.cycleCount
+      ),
+      staleDate: sessionEnd
     )
     for activity in Activity<TimerActivityAttributes>.activities where activity.attributes.sessionId != snapshot.sessionId {
       await activity.end(nil, dismissalPolicy: .immediate)
