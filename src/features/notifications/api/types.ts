@@ -2,10 +2,16 @@ export type NotificationSettings = {
   focusStartEnabled: boolean;
   focusEndEnabled: boolean;
   breakEndEnabled: boolean;
-  seasonalBeverageEnabled: boolean;
 };
 
 export type UpdateNotificationSettingsRequest = NotificationSettings;
+
+export type DailyNotificationSettings = {
+  notificationTime: string;
+  enabled: boolean;
+};
+
+export type UpdateDailyNotificationRequest = DailyNotificationSettings;
 
 export type DeviceTokenRequestPlatform = "ANDROID" | "IOS";
 export type DeviceTokenResponsePlatform = "android" | "ios";
@@ -13,6 +19,10 @@ export type DeviceTokenResponsePlatform = "android" | "ios";
 export type RegisterDeviceTokenRequest = {
   token: string;
   platform: DeviceTokenRequestPlatform;
+};
+
+export type DeactivateDeviceTokenRequest = {
+  token: string;
 };
 
 export type DeviceTokenRegistration = {

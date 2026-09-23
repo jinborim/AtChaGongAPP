@@ -12,7 +12,12 @@ import {
 import { useAuth } from "@/src/features/auth";
 import { logoutCurrentUser } from "@/src/features/auth/services";
 import { getCoinBalance } from "@/src/features/coin";
-import { cancelTimerNotifications } from "@/src/features/notifications";
+import {
+  cancelTimerNotifications,
+  deactivateCurrentFcmToken,
+  registerCurrentFcmTokenIfPermitted,
+  resetFcmTokenRegistrationState,
+} from "@/src/features/notifications";
 import {
   deleteMe,
   getProfileImages,
@@ -285,12 +290,30 @@ export default function Mypage() {
     setIsDeletingAccount(true);
 
     try {
+      try {
+        await deactivateCurrentFcmToken();
+      } catch (error) {
+        console.warn("회원 탈퇴 전 FCM 기기 토큰 비활성화 실패:", error);
+      }
+
       await deleteMe();
+      resetFcmTokenRegistrationState();
       await clearAuthTokensForRecovery();
       setIsDeleteAccountModalOpen(false);
       setSignedOut();
       router.replace("/login");
     } catch (error) {
+      resetFcmTokenRegistrationState();
+
+      try {
+        await registerCurrentFcmTokenIfPermitted();
+      } catch (registrationError) {
+        console.warn(
+          "회원 탈퇴 실패 후 FCM 기기 토큰 복구 실패:",
+          registrationError,
+        );
+      }
+
       const message =
         error instanceof Error
           ? error.message

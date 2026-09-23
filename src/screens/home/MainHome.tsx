@@ -11,6 +11,7 @@ import {
   cancelTimerNotifications,
   clearTimerNotificationIds,
   getNotificationSettings,
+  registerCurrentFcmTokenIfPermitted,
   requestTimerNotificationPermission,
   scheduleTimerNotifications,
   updateTimerNotificationsEnabled,
@@ -631,6 +632,12 @@ export default function StudyScreen() {
         }
 
         if (hasNotificationPermission) {
+          try {
+            await registerCurrentFcmTokenIfPermitted();
+          } catch (error) {
+            console.warn("FCM 기기 토큰 등록 실패:", error);
+          }
+
           try {
             const notificationSettings = await getNotificationSettings();
             shouldScheduleTimerNotifications =

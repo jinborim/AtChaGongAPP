@@ -1,8 +1,18 @@
-export { registerCurrentFcmToken } from "./deviceTokenService";
+export {
+  deactivateCurrentFcmToken,
+  registerCurrentFcmToken,
+  registerCurrentFcmTokenIfPermitted,
+  resetFcmTokenRegistrationState,
+  subscribeToFcmTokenRefresh,
+} from "./deviceTokenService";
 export {
   configureForegroundNotificationHandler,
+  ensureRemoteNotificationChannel,
   ensureTimerNotificationChannel,
+  isNotificationPermissionGranted,
+  REMOTE_NOTIFICATION_CHANNEL_ID,
   requestTimerNotificationPermission,
+  subscribeToForegroundRemoteMessages,
   TIMER_NOTIFICATION_CHANNEL_ID,
 } from "./notificationService";
 export {

@@ -1,5 +1,4 @@
 import {
-  getNotificationSettings,
   updateNotificationSettings,
   type NotificationSettings,
 } from "../api";
@@ -13,12 +12,9 @@ export function areTimerNotificationsEnabled(settings: NotificationSettings) {
   );
 }
 
-/** 최신 서버 설정을 기준으로 타이머 관련 알림을 함께 변경합니다. */
+/** 타이머 관련 알림을 함께 변경합니다. */
 export async function updateTimerNotificationsEnabled(enabled: boolean) {
-  const currentSettings = await getNotificationSettings();
-
   return updateNotificationSettings({
-    ...currentSettings,
     focusStartEnabled: enabled,
     focusEndEnabled: enabled,
     breakEndEnabled: enabled,

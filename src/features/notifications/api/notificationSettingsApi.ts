@@ -14,8 +14,11 @@ export function getNotificationSettings() {
 export function updateNotificationSettings(
   request: UpdateNotificationSettingsRequest,
 ) {
-  return apiClient.request<NotificationSettings>("/notification-settings", {
-    method: "PUT",
-    body: request,
-  });
+  return apiClient.request<NotificationSettings | undefined>(
+    "/notification-settings",
+    {
+      method: "PUT",
+      body: request,
+    },
+  );
 }
