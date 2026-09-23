@@ -12,7 +12,8 @@ import {
 import { completeOnboardingWithAlert } from "./onboardingCompletion";
 
 const BACKGROUND = require("../../assets/images/Background.png");
-const ICE_CUP = require("../../assets/images/IceCup1-3.png");
+const COIN = require("../../assets/images/Coin.png");
+const ATTENDANCE_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 export default function Onboarding2() {
   return (
@@ -43,18 +44,49 @@ export default function Onboarding2() {
           </Pressable>
 
           <View className="items-center">
-            <Image
-              source={ICE_CUP}
-              className="h-[210px] w-[174px]"
-              resizeMode="contain"
-            />
+            <View className="h-[270px] w-[320px] items-center justify-center">
+              <Image
+                source={COIN}
+                className="h-[92px] w-[92px]"
+                resizeMode="contain"
+                fadeDuration={0}
+              />
+              <Text className="mt-2 font-maru text-[30px] text-[#E18B00]">
+                +10 코인
+              </Text>
+
+              <View className="mt-5 flex-row gap-[7px]">
+                {ATTENDANCE_DAYS.map((day) => {
+                  const attended = day <= 2;
+
+                  return (
+                    <View key={day} className="items-center">
+                      <View
+                        className={`h-10 w-9 items-center justify-center rounded-[7px] border-2 ${
+                          attended
+                            ? "border-primary bg-[#B7DEFF]"
+                            : "border-[#CBD8E4] bg-transparent"
+                        }`}
+                      >
+                        <Text className="font-maru text-[12px] text-primary">
+                          {attended ? "✓" : day}
+                        </Text>
+                      </View>
+                      <Text className="mt-1 font-maru text-[9px] text-primary">
+                        {day === 7 ? "10/70" : "+10"}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
 
             <Text className="mt-[18px] text-center font-maru text-[28px] leading-[36px] text-primary">
-              집중을 시작하면 {"\n"}얼음이 녹기 시작해요
+              매일 출석하고{"\n"}코인을 받아요
             </Text>
             <Text className="mt-[18px] text-center font-maru text-[16px] leading-[24px] text-gray-300">
-              타이머가 흐르는 동안 얼음이 조금씩 녹아,{"\n"}
-              남은 집중 시간을 눈으로 확인할 수 있어요.
+              앱에 방문해 출석하면 매일 10코인{"\n"}
+              7일 연속 출석 시 70코인을 받아요
             </Text>
           </View>
 

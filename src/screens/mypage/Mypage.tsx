@@ -1,17 +1,51 @@
 import { clearAuthTokensForRecovery } from "@/src/api";
+import CoinBalance from "@/src/components/CoinBalance";
+import AttendanceStatusModal from "@/src/components/Modal/AttendanceStatusModal";
 import CustomModal from "@/src/components/Modal/CustomModal";
 import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
+import ProfileImageModal from "@/src/components/Modal/ProfileImageModal";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
+import {
+  getAttendanceStatus,
+  type AttendanceStatus,
+} from "@/src/features/attendance";
 import { useAuth } from "@/src/features/auth";
 import { logoutCurrentUser } from "@/src/features/auth/services";
-import { deleteMe, updateNickname } from "@/src/features/user";
-import { useRouter } from "expo-router";
-import { Check, ChevronRight, Pencil } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { getCoinBalance } from "@/src/features/coin";
+import {
+  cancelTimerNotifications,
+  deactivateCurrentFcmToken,
+  registerCurrentFcmTokenIfPermitted,
+  resetFcmTokenRegistrationState,
+} from "@/src/features/notifications";
+import {
+  deleteMe,
+  getProfileImages,
+  getUserProfile,
+  updateNickname,
+  updateUserProfile,
+} from "@/src/features/user";
+import {
+  PROFILE_IMAGES,
+  getProfileImage,
+  getServerProfileImage,
+  type ProfileImageId,
+} from "@/src/features/user/profileImages";
+import { useFocusEffect, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import {
+  Bell,
+  Check,
+  ChevronRight,
+  Pencil,
+  RefreshCw,
+} from "lucide-react-native";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
   ImageBackground,
+  Platform,
   Pressable,
   Text,
   TextInput,
@@ -20,9 +54,12 @@ import {
 } from "react-native";
 const PRIMARY = "#183765";
 const DEFAULT_NICKNAME = "사용자";
+// 게스트와 서버 조회 실패 시 사용할 프로필 선택을 기기에 보관합니다.
+const PROFILE_IMAGE_KEY = "atchagong.profile-image.v1";
 
 export default function Mypage() {
-  const { isGuest, setSignedOut, updateCurrentUser, user } = useAuth();
+  const { isAuthenticated, isGuest, setSignedOut, updateCurrentUser, user } =
+    useAuth();
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
   const [isEditing, setIsEditing] = useState(false); // 추가: 편집 모드 여부
   const [inputNickname, setInputNickname] = useState(""); // 추가: input에 입력 중인 값
@@ -34,7 +71,161 @@ export default function Mypage() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isProfileLoginPromptOpen, setIsProfileLoginPromptOpen] =
     useState(false);
+  const [isAttendanceLoginPromptOpen, setIsAttendanceLoginPromptOpen] =
+    useState(false);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [attendanceStatus, setAttendanceStatus] =
+    useState<AttendanceStatus | null>(null);
+  const [isAttendanceStatusLoading, setIsAttendanceStatusLoading] =
+    useState(false);
+  const [coinBalance, setCoinBalance] = useState(0);
   const router = useRouter();
+  const [profileImageId, setProfileImageId] = useState<ProfileImageId>("bear");
+  const [draftProfileImageId, setDraftProfileImageId] =
+    useState<ProfileImageId>("bear");
+  const [isProfileImageModalOpen, setIsProfileImageModalOpen] = useState(false);
+  const [isProfileImageReady, setIsProfileImageReady] = useState(false);
+  const [isSavingProfileImage, setIsSavingProfileImage] = useState(false);
+  const [availableProfileIds, setAvailableProfileIds] = useState<number[]>(
+    PROFILE_IMAGES.map((item) => item.profileId),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      if (!isAuthenticated) {
+        setCoinBalance(0);
+        return () => {
+          active = false;
+        };
+      }
+
+      getCoinBalance()
+        .then((response) => {
+          if (active) setCoinBalance(response.balance);
+        })
+        .catch((error) => console.log("코인 잔액 조회 오류:", error));
+
+      return () => {
+        active = false;
+      };
+    }, [isAuthenticated]),
+  );
+
+  useEffect(() => {
+    let active = true;
+    const restore = async () => {
+      try {
+        const saved =
+          Platform.OS === "web"
+            ? window.localStorage.getItem(PROFILE_IMAGE_KEY)
+            : await SecureStore.getItemAsync(PROFILE_IMAGE_KEY);
+        if (!active) return;
+
+        const localProfileImage = getProfileImage(saved);
+        setProfileImageId(localProfileImage.id);
+
+        if (!isGuest) {
+          const [profileResult, profileImagesResult] = await Promise.allSettled(
+            [getUserProfile(), getProfileImages()],
+          );
+
+          if (active) {
+            if (profileResult.status === "fulfilled") {
+              setProfileImageId(
+                getServerProfileImage(
+                  profileResult.value.profileId,
+                  profileResult.value.name,
+                ).id,
+              );
+            } else {
+              console.log(
+                "유저 프로필 이미지 조회 오류:",
+                profileResult.reason,
+              );
+            }
+
+            if (profileImagesResult.status === "fulfilled") {
+              setAvailableProfileIds(
+                profileImagesResult.value.map((item) => item.profileId),
+              );
+            } else {
+              console.log(
+                "프로필 이미지 목록 조회 오류:",
+                profileImagesResult.reason,
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.log("로컬 프로필 이미지 조회 오류:", error);
+      } finally {
+        if (active) setIsProfileImageReady(true);
+      }
+    };
+    void restore();
+    return () => {
+      active = false;
+    };
+  }, [isGuest]);
+
+  const handleOpenProfileImages = () => {
+    if (isGuest) {
+      setIsProfileLoginPromptOpen(true);
+      return;
+    }
+    setDraftProfileImageId(profileImageId);
+    setIsProfileImageModalOpen(true);
+  };
+
+  const handleOpenAttendance = async () => {
+    if (!isAuthenticated) {
+      setIsAttendanceLoginPromptOpen(true);
+      return;
+    }
+
+    if (isAttendanceStatusLoading) return;
+    setIsAttendanceStatusLoading(true);
+
+    try {
+      const status = await getAttendanceStatus();
+      setAttendanceStatus(status);
+      setIsAttendanceModalOpen(true);
+    } catch (error) {
+      console.log("출석 현황 확인 오류:", error);
+      Alert.alert(
+        "출석 현황 조회 실패",
+        "출석 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setIsAttendanceStatusLoading(false);
+    }
+  };
+
+  const handleSaveProfileImage = async () => {
+    if (isSavingProfileImage) return;
+    setIsSavingProfileImage(true);
+    try {
+      const selectedProfile = getProfileImage(draftProfileImageId);
+      const updatedProfile = await updateUserProfile({
+        profileId: selectedProfile.profileId,
+      });
+      const savedProfile = getServerProfileImage(updatedProfile.profileId, "");
+
+      if (Platform.OS === "web") {
+        window.localStorage.setItem(PROFILE_IMAGE_KEY, savedProfile.id);
+      } else {
+        await SecureStore.setItemAsync(PROFILE_IMAGE_KEY, savedProfile.id);
+      }
+      setProfileImageId(savedProfile.id);
+      setIsProfileImageModalOpen(false);
+    } catch {
+      Alert.alert("프로필 저장 실패", "잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsSavingProfileImage(false);
+    }
+  };
 
   useEffect(() => {
     setNickname(isGuest ? "게스트" : user?.nickname || DEFAULT_NICKNAME);
@@ -79,10 +270,12 @@ export default function Mypage() {
     setIsLoggingOut(true);
 
     try {
-      await logoutCurrentUser();
-    } catch {
-      // 서버 로그아웃이 실패해도 로컬 토큰은 삭제되므로 로그인 화면으로 이동합니다.
+      await Promise.allSettled([
+        logoutCurrentUser(),
+        cancelTimerNotifications(),
+      ]);
     } finally {
+      // 서버 로그아웃 또는 알림 취소가 실패해도 로컬 로그아웃은 완료합니다.
       setIsLoggingOut(false);
       setIsLogoutModalOpen(false);
       setSignedOut();
@@ -97,12 +290,30 @@ export default function Mypage() {
     setIsDeletingAccount(true);
 
     try {
+      try {
+        await deactivateCurrentFcmToken();
+      } catch (error) {
+        console.warn("회원 탈퇴 전 FCM 기기 토큰 비활성화 실패:", error);
+      }
+
       await deleteMe();
+      resetFcmTokenRegistrationState();
       await clearAuthTokensForRecovery();
       setIsDeleteAccountModalOpen(false);
       setSignedOut();
       router.replace("/login");
     } catch (error) {
+      resetFcmTokenRegistrationState();
+
+      try {
+        await registerCurrentFcmTokenIfPermitted();
+      } catch (registrationError) {
+        console.warn(
+          "회원 탈퇴 실패 후 FCM 기기 토큰 복구 실패:",
+          registrationError,
+        );
+      }
+
       const message =
         error instanceof Error
           ? error.message
@@ -120,6 +331,9 @@ export default function Mypage() {
   const handlePressNoticePage = () => {
     router.push("/notice");
   };
+  const handlePressNotificationSettings = () => {
+    router.push("/mypage/notifications");
+  };
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -127,15 +341,35 @@ export default function Mypage() {
       className="flex-1"
     >
       <View className="flex-1 px-12 pt-24">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="알림 설정 열기"
+          hitSlop={8}
+          onPress={handlePressNotificationSettings}
+          className="absolute right-8 top-16 z-10 h-11 w-11 items-center justify-center "
+        >
+          <Bell size={24} color={PRIMARY} strokeWidth={2.5} />
+        </Pressable>
+
         {/* 프로필 */}
         <View className="mb-12 flex-row items-center">
-          <View className="mr-8 h-16 w-16 items-center justify-center ">
+          <Pressable
+            className="mr-8 h-16 w-16 items-center justify-center"
+            accessibilityRole="button"
+            accessibilityLabel="프로필 이미지 변경"
+            accessibilityState={{ disabled: !isProfileImageReady }}
+            disabled={!isProfileImageReady}
+            onPress={handleOpenProfileImages}
+          >
             <Image
-              source={require("../../assets/images/Bear.png")}
+              source={getProfileImage(isGuest ? "bear" : profileImageId).source}
               className="absolute h-20 w-20"
               resizeMode="contain"
             />
-          </View>
+            <View className="absolute -bottom-2 -right-2 h-6 w-6 items-center justify-center rounded-full border border-primary bg-white">
+              <RefreshCw size={14} color={PRIMARY} strokeWidth={2.5} />
+            </View>
+          </Pressable>
 
           {/* 닉네임 */}
           {/* 닉네임 영역 */}
@@ -181,6 +415,13 @@ export default function Mypage() {
                 </Pressable>
               </View>
             )}
+            <View className="mt-3 self-start">
+              <CoinBalance
+                balance={isGuest ? 0 : coinBalance}
+                compact
+                onPress={() => router.push("/store")}
+              />
+            </View>
           </View>
         </View>
         {isGuest && (
@@ -209,6 +450,30 @@ export default function Mypage() {
 
           {/* 메뉴 내용 */}
           <View>
+            {/* 출석 현황 */}
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="출석 현황 확인"
+              accessibilityState={{ disabled: isAttendanceStatusLoading }}
+              disabled={isAttendanceStatusLoading}
+              className="h-16 flex-row items-center border-b-2 border-primary px-5"
+              onPress={() => {
+                handleOpenAttendance().catch((error) =>
+                  console.log("출석 현황 열기 오류:", error),
+                );
+              }}
+            >
+              <Image
+                source={require("../../assets/images/AttendanceIcon.png")}
+                className="absolute left-5 h-[30px] w-[30px]"
+                resizeMode="contain"
+              />
+              <Text className="ml-12 flex-1 font-maru text-md text-primary">
+                출석 현황
+              </Text>
+              <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
+            </TouchableOpacity>
+
             {/* 공지사항 */}
             <TouchableOpacity
               className="h-16 flex-row items-center border-b-2 border-primary px-5"
@@ -244,6 +509,26 @@ export default function Mypage() {
               <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
             </TouchableOpacity>
 
+            {/* 음료 도감 */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="음료 도감 열기"
+              onPress={() => router.push("/mypage/beverages")}
+              className={`h-16 flex-row items-center px-5 ${
+                !isGuest ? "border-b-2 border-primary" : ""
+              }`}
+            >
+              <Image
+                source={require("../../assets/images/Encyclopedia.png")}
+                className="absolute left-5 h-[28px] w-[28px]"
+                resizeMode="contain"
+              />
+              <Text className="ml-12 flex-1 font-maru text-md text-primary">
+                음료 도감
+              </Text>
+              <ChevronRight size={24} color={PRIMARY} strokeWidth={3} />
+            </Pressable>
+
             {!isGuest && (
               <Pressable
                 className="h-16 flex-row items-center px-5"
@@ -271,6 +556,25 @@ export default function Mypage() {
           </Pressable>
         )}
       </View>
+      <ProfileImageModal
+        visible={isProfileImageModalOpen && !isGuest}
+        selectedId={draftProfileImageId}
+        availableProfileIds={availableProfileIds}
+        saving={isSavingProfileImage}
+        onSelect={setDraftProfileImageId}
+        onClose={() => {
+          if (!isSavingProfileImage) setIsProfileImageModalOpen(false);
+        }}
+        onConfirm={handleSaveProfileImage}
+      />
+      <AttendanceStatusModal
+        visible={
+          isAttendanceModalOpen && isAuthenticated && attendanceStatus !== null
+        }
+        attendedToday={attendanceStatus?.attendedToday ?? false}
+        attendanceDay={attendanceStatus?.consecutiveDay ?? 0}
+        onClose={() => setIsAttendanceModalOpen(false)}
+      />
       <CustomModal
         visible={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -286,6 +590,7 @@ export default function Mypage() {
         onClose={() => setIsDeleteAccountModalOpen(false)}
         onConfirm={handleDeleteAccount}
         title="회원탈퇴"
+        imageSource={require("../../assets/images/PenguinWithdrawal.png")}
         description="정말...회원 탈퇴하시겠습니다? 정말요..?"
         buttonCount={2}
         confirmText={isDeletingAccount ? "탈퇴 중" : "회원탈퇴"}
@@ -295,6 +600,11 @@ export default function Mypage() {
         visible={isProfileLoginPromptOpen}
         onClose={() => setIsProfileLoginPromptOpen(false)}
         description="프로필과 닉네임을 수정하려면 로그인이 필요해요."
+      />
+      <LoginRequiredModal
+        visible={isAttendanceLoginPromptOpen}
+        onClose={() => setIsAttendanceLoginPromptOpen(false)}
+        description="출석 현황을 확인하려면 로그인이 필요해요."
       />
       <NavigationBar />
     </ImageBackground>

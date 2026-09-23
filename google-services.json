@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "187605639206",
+    "project_id": "atchagong-a0614",
+    "storage_bucket": "atchagong-a0614.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187605639206:android:5d5e9d60bd8f0b5e09c6e7",
+        "android_client_info": {
+          "package_name": "com.atchagong.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnRG9kg8_PHSCOSn99t5yHTYXrPZ3lQJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

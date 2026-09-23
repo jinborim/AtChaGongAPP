@@ -9,7 +9,9 @@ import NavigationButton from "./NavigationButton";
 const NAVIGATION_ITEMS: {
   label: string;
   icon: number;
-  href: "/homeSetting" | "/month" | "/mypage";
+  iconSize?: number;
+  iconOffsetY?: number;
+  href: "/homeSetting" | "/store" | "/month" | "/mypage";
 }[] = [
   {
     label: "홈",
@@ -17,8 +19,20 @@ const NAVIGATION_ITEMS: {
     href: "/homeSetting",
   },
   {
+    label: "상점",
+    icon: require("../../assets/images/Store.png"),
+    // 투명 여백과 아이콘 형태에 따른 시각적 크기를 보정합니다.
+    iconSize: 42,
+    iconOffsetY: -2.8,
+    href: "/store",
+  },
+  {
     label: "통계",
-    icon: require("../../assets/images/RecordIcon.png"),
+    icon: require("../../assets/images/StatisticsIconV2.png"),
+    // 이미지 자체의 투명 여백을 보정해 다른 네비게이션 아이콘과
+    // 실제로 보이는 크기와 세로 중심을 맞춥니다.
+    iconSize: 56,
+    iconOffsetY: -2,
     href: "/month",
   },
   {
@@ -42,6 +56,8 @@ export default function NavigationBar() {
             key={item.href}
             label={item.label}
             icon={item.icon}
+            iconSize={item.iconSize}
+            iconOffsetY={item.iconOffsetY}
             onPress={() => {
               if (isGuest && item.href === "/month") {
                 setIsLoginPromptOpen(true);

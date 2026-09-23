@@ -1,11 +1,4 @@
-export type Beverage = {
-  beverageId: number;
-  name: string;
-  imgUrl: string;
-};
-
 export type TimerSettings = {
-  beverage: Beverage | null;
   focusMinutes: number;
   breakMinutes: number;
   cycleCount: number;
@@ -13,7 +6,6 @@ export type TimerSettings = {
 };
 
 export type UpdateTimerSettingsRequest = {
-  beverageId: number;
   focusMinutes: number;
   breakMinutes: number;
   cycleCount: number;
@@ -25,4 +17,9 @@ export type CompleteFocusRecordRequest = {
   focusedSeconds: number;
   startedAt: string;
   completedAt: string;
+};
+
+export type FocusRecord = CompleteFocusRecordRequest & {
+  focusRecordId: number;
+  focusedDate: string;
 };

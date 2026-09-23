@@ -2,27 +2,35 @@
   "expo": {
     "name": "앗차공-뽀모도로",
     "slug": "atchagong",
-    "version": "1.0.4",
+    "version": "1.1.4",
     "orientation": "portrait",
     "icon": "./src/assets/images/Ice.png",
     "scheme": "atchagongapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "appleTeamId": "SS32PHC392",
       "supportsTablet": false,
       "bundleIdentifier": "com.atchagong.atchagong",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.atchagong.atchagong.timer"
+        ]
+      },
       "infoPlist": {
+        "NSSupportsLiveActivities": true,
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E8F3FC",
         "backgroundImage": "./src/assets/images/Background.png",
         "foregroundImage": "./src/assets/images/Ice.png"
       },
-      // "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.atchagong.app"
     },
@@ -32,7 +40,14 @@
       "bundler": "metro"
     },
     "plugins": [
+      "@bacons/apple-targets",
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -58,13 +73,25 @@
       [
         "expo-build-properties",
         {
+          "ios": {
+            "useFrameworks": "static"
+          },
           "android": {
             "extraMavenRepos": [
               "https://devrepo.kakao.com/nexus/content/groups/public/"
             ]
           }
         }
-      ]
+      ],
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
+      "@react-native-firebase/messaging"
     ],
     "experiments": {
       "typedRoutes": true,

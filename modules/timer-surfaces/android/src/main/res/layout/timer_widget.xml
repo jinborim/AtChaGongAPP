@@ -1,0 +1,50 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/timer_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/timer_widget_background">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="vertical">
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:text="앗차공"
+      android:textColor="#285678"
+      android:textSize="15sp"
+      android:textStyle="bold" />
+
+    <TextView
+      android:id="@+id/timer_title"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
+      android:maxLines="2"
+      android:text="집중할 준비가 되었나요?"
+      android:textColor="#285678"
+      android:textSize="13sp" />
+
+    <Chronometer
+      android:id="@+id/timer_countdown"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:textColor="#173E5B"
+      android:textSize="26sp"
+      android:textStyle="bold"
+      android:visibility="gone" />
+
+    <TextView
+      android:id="@+id/timer_hint"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="5dp"
+      android:maxLines="2"
+      android:text="눌러서 타이머 시작"
+      android:textColor="#45677E"
+      android:textSize="12sp" />
+  </LinearLayout>
+</FrameLayout>

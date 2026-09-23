@@ -23,15 +23,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   BREAK_MINUTES,
-  DEFAULT_BEVERAGE_ID,
+  DEFAULT_CYCLE_COUNT,
   DEFAULT_FOCUS_MINUTES,
   FOCUS_MINUTES_STEP,
-  MAX_CYCLE_COUNT,
   MAX_FOCUS_MINUTES,
   MIN_FOCUS_MINUTES,
 } from "../../constants/timer";
 import {
+  normalizeBreakMinutes,
+  normalizeCycleCount,
   normalizeFocusMinutes,
+  parseStoredBreakMinutes,
+  parseStoredCycleCount,
   parseStoredFocusMinutes,
 } from "../../utils/timerSettings";
 
@@ -138,6 +141,8 @@ export default function TimerSettingScreen() {
   const router = useRouter();
   const { isGuest } = useAuth();
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
+  const [breakMinutes, setBreakMinutes] = useState(BREAK_MINUTES);
+  const [cycleCount, setCycleCount] = useState(DEFAULT_CYCLE_COUNT);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
@@ -146,9 +151,16 @@ export default function TimerSettingScreen() {
     const loadSettings = async () => {
       setIsLoading(true);
 
-      const savedFocusMinutes = await AsyncStorage.getItem("focusMinutes");
+      const [savedFocusMinutes, savedBreakMinutes, savedCycleCount] =
+        await Promise.all([
+          AsyncStorage.getItem("focusMinutes"),
+          AsyncStorage.getItem("breakMinutes"),
+          AsyncStorage.getItem("cycleCount"),
+        ]);
 
       setFocusMinutes(parseStoredFocusMinutes(savedFocusMinutes));
+      setBreakMinutes(parseStoredBreakMinutes(savedBreakMinutes));
+      setCycleCount(parseStoredCycleCount(savedCycleCount));
 
       if (isGuest) return;
 
@@ -156,6 +168,8 @@ export default function TimerSettingScreen() {
         const timerSettings = await getTimerSettings();
 
         setFocusMinutes(normalizeFocusMinutes(timerSettings.focusMinutes));
+        setBreakMinutes(normalizeBreakMinutes(timerSettings.breakMinutes));
+        setCycleCount(normalizeCycleCount(timerSettings.cycleCount));
       } catch (error) {
         console.log("타이머 서버 설정 불러오기 오류:", error);
       }
@@ -176,10 +190,9 @@ export default function TimerSettingScreen() {
       setIsSaving(true);
 
       const timerSettings = await updateTimerSettings({
-        beverageId: DEFAULT_BEVERAGE_ID,
         focusMinutes,
-        breakMinutes: BREAK_MINUTES,
-        cycleCount: MAX_CYCLE_COUNT,
+        breakMinutes,
+        cycleCount,
       });
 
       await Promise.all([
@@ -187,7 +200,14 @@ export default function TimerSettingScreen() {
           "focusMinutes",
           String(normalizeFocusMinutes(timerSettings.focusMinutes)),
         ),
-        AsyncStorage.setItem("cycleCount", String(MAX_CYCLE_COUNT)),
+        AsyncStorage.setItem(
+          "breakMinutes",
+          String(normalizeBreakMinutes(timerSettings.breakMinutes)),
+        ),
+        AsyncStorage.setItem(
+          "cycleCount",
+          String(normalizeCycleCount(timerSettings.cycleCount)),
+        ),
       ]);
       router.back();
     } catch (error) {
@@ -236,16 +256,16 @@ export default function TimerSettingScreen() {
           />
           <SettingCard
             label="휴식 시간"
-            value={BREAK_MINUTES}
+            value={breakMinutes}
             unit="분"
             iconSource={SETTING_ICONS.break}
           />
           <SettingCard
             label="반복 횟수"
-            value={MAX_CYCLE_COUNT}
+            value={cycleCount}
             unit="회"
             iconSource={SETTING_ICONS.cycle}
-            cycleCount={MAX_CYCLE_COUNT}
+            cycleCount={cycleCount}
             cycleFocusMinutes={focusMinutes}
           />
         </ScrollView>
