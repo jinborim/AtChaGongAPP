@@ -74,7 +74,7 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic"
+            "useFrameworks": "static"
           },
           "android": {
             "extraMavenRepos": [
@@ -83,7 +83,14 @@
           }
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/messaging"
     ],
     "experiments": {
