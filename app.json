@@ -12,6 +12,7 @@
       "appleTeamId": "SS32PHC392",
       "supportsTablet": false,
       "bundleIdentifier": "com.atchagong.atchagong",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.security.application-groups": [
@@ -30,7 +31,6 @@
         "backgroundImage": "./src/assets/images/Background.png",
         "foregroundImage": "./src/assets/images/Ice.png"
       },
-      // "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.atchagong.app"
     },
@@ -42,7 +42,12 @@
     "plugins": [
       "@bacons/apple-targets",
       "expo-router",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -68,13 +73,18 @@
       [
         "expo-build-properties",
         {
+          "ios": {
+            "useFrameworks": "dynamic"
+          },
           "android": {
             "extraMavenRepos": [
               "https://devrepo.kakao.com/nexus/content/groups/public/"
             ]
           }
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
     ],
     "experiments": {
       "typedRoutes": true,

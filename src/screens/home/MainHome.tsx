@@ -7,10 +7,14 @@ import TimerSessionContent, {
   type TimerSessionPhase,
 } from "@/src/components/TimerSessionContent";
 import {
+  areTimerNotificationsEnabled,
   cancelTimerNotifications,
   clearTimerNotificationIds,
+  getNotificationSettings,
+  registerCurrentFcmTokenIfPermitted,
   requestTimerNotificationPermission,
   scheduleTimerNotifications,
+  updateTimerNotificationsEnabled,
 } from "@/src/features/notifications";
 import {
   completeFocusRecord,
@@ -616,7 +620,8 @@ export default function StudyScreen() {
     try {
       await prepareTimerSurfaces();
 
-      let hasNotificationPermission = false;
+      let hasNotificationPermission: boolean | null = null;
+      let shouldScheduleTimerNotifications = false;
 
       if (!isGuest) {
         try {
@@ -624,6 +629,28 @@ export default function StudyScreen() {
             await requestTimerNotificationPermission();
         } catch (error) {
           console.warn("타이머 알림 권한 요청 실패:", error);
+        }
+
+        if (hasNotificationPermission) {
+          try {
+            await registerCurrentFcmTokenIfPermitted();
+          } catch (error) {
+            console.warn("FCM 기기 토큰 등록 실패:", error);
+          }
+
+          try {
+            const notificationSettings = await getNotificationSettings();
+            shouldScheduleTimerNotifications =
+              areTimerNotificationsEnabled(notificationSettings);
+          } catch (error) {
+            console.warn("타이머 알림 설정 조회 실패:", error);
+          }
+        } else if (hasNotificationPermission === false) {
+          try {
+            await updateTimerNotificationsEnabled(false);
+          } catch (error) {
+            console.warn("타이머 알림 거부 설정 반영 실패:", error);
+          }
         }
       }
 
@@ -636,7 +663,7 @@ export default function StudyScreen() {
       const nextEndTime = startTime + remainingMilliseconds;
 
       try {
-        if (!isGuest && hasNotificationPermission) {
+        if (!isGuest && shouldScheduleTimerNotifications) {
           await scheduleTimerNotifications({
             startTime,
             focusDurationMilliseconds: remainingMilliseconds,

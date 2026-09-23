@@ -1,4 +1,8 @@
 import { clearAuthTokens, saveAuthTokens } from "@/src/api/tokenStorage";
+import {
+  deactivateCurrentFcmToken,
+  resetFcmTokenRegistrationState,
+} from "@/src/features/notifications/services";
 
 import { logout, socialLogin } from "../api";
 import type { AuthType, SocialLoginRequest } from "../api";
@@ -98,8 +102,15 @@ export async function loginWithDevAuthTokens(): Promise<SocialLoginResult> {
  */
 export async function logoutCurrentUser() {
   try {
+    try {
+      await deactivateCurrentFcmToken();
+    } catch (error) {
+      console.warn("로그아웃 전 FCM 기기 토큰 비활성화 실패:", error);
+    }
+
     await logout();
   } finally {
+    resetFcmTokenRegistrationState();
     await clearAuthTokens();
   }
 }

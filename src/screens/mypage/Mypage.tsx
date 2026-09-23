@@ -1,18 +1,23 @@
 import { clearAuthTokensForRecovery } from "@/src/api";
-import CustomModal from "@/src/components/Modal/CustomModal";
+import CoinBalance from "@/src/components/CoinBalance";
 import AttendanceStatusModal from "@/src/components/Modal/AttendanceStatusModal";
+import CustomModal from "@/src/components/Modal/CustomModal";
 import LoginRequiredModal from "@/src/components/Modal/LoginRequiredModal";
 import ProfileImageModal from "@/src/components/Modal/ProfileImageModal";
-import CoinBalance from "@/src/components/CoinBalance";
 import NavigationBar from "@/src/components/NavigationBar/NavigationBar";
 import {
   getAttendanceStatus,
   type AttendanceStatus,
 } from "@/src/features/attendance";
 import { useAuth } from "@/src/features/auth";
-import { getCoinBalance } from "@/src/features/coin";
 import { logoutCurrentUser } from "@/src/features/auth/services";
-import { cancelTimerNotifications } from "@/src/features/notifications";
+import { getCoinBalance } from "@/src/features/coin";
+import {
+  cancelTimerNotifications,
+  deactivateCurrentFcmToken,
+  registerCurrentFcmTokenIfPermitted,
+  resetFcmTokenRegistrationState,
+} from "@/src/features/notifications";
 import {
   deleteMe,
   getProfileImages,
@@ -26,9 +31,10 @@ import {
   getServerProfileImage,
   type ProfileImageId,
 } from "@/src/features/user/profileImages";
-import * as SecureStore from "expo-secure-store";
 import { useFocusEffect, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import {
+  Bell,
   Check,
   ChevronRight,
   Pencil,
@@ -39,8 +45,8 @@ import {
   Alert,
   Image,
   ImageBackground,
-  Pressable,
   Platform,
+  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
@@ -75,7 +81,8 @@ export default function Mypage() {
   const [coinBalance, setCoinBalance] = useState(0);
   const router = useRouter();
   const [profileImageId, setProfileImageId] = useState<ProfileImageId>("bear");
-  const [draftProfileImageId, setDraftProfileImageId] = useState<ProfileImageId>("bear");
+  const [draftProfileImageId, setDraftProfileImageId] =
+    useState<ProfileImageId>("bear");
   const [isProfileImageModalOpen, setIsProfileImageModalOpen] = useState(false);
   const [isProfileImageReady, setIsProfileImageReady] = useState(false);
   const [isSavingProfileImage, setIsSavingProfileImage] = useState(false);
@@ -110,19 +117,19 @@ export default function Mypage() {
     let active = true;
     const restore = async () => {
       try {
-        const saved = Platform.OS === "web"
-          ? window.localStorage.getItem(PROFILE_IMAGE_KEY)
-          : await SecureStore.getItemAsync(PROFILE_IMAGE_KEY);
+        const saved =
+          Platform.OS === "web"
+            ? window.localStorage.getItem(PROFILE_IMAGE_KEY)
+            : await SecureStore.getItemAsync(PROFILE_IMAGE_KEY);
         if (!active) return;
 
         const localProfileImage = getProfileImage(saved);
         setProfileImageId(localProfileImage.id);
 
         if (!isGuest) {
-          const [profileResult, profileImagesResult] = await Promise.allSettled([
-            getUserProfile(),
-            getProfileImages(),
-          ]);
+          const [profileResult, profileImagesResult] = await Promise.allSettled(
+            [getUserProfile(), getProfileImages()],
+          );
 
           if (active) {
             if (profileResult.status === "fulfilled") {
@@ -158,7 +165,9 @@ export default function Mypage() {
       }
     };
     void restore();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [isGuest]);
 
   const handleOpenProfileImages = () => {
@@ -281,12 +290,30 @@ export default function Mypage() {
     setIsDeletingAccount(true);
 
     try {
+      try {
+        await deactivateCurrentFcmToken();
+      } catch (error) {
+        console.warn("회원 탈퇴 전 FCM 기기 토큰 비활성화 실패:", error);
+      }
+
       await deleteMe();
+      resetFcmTokenRegistrationState();
       await clearAuthTokensForRecovery();
       setIsDeleteAccountModalOpen(false);
       setSignedOut();
       router.replace("/login");
     } catch (error) {
+      resetFcmTokenRegistrationState();
+
+      try {
+        await registerCurrentFcmTokenIfPermitted();
+      } catch (registrationError) {
+        console.warn(
+          "회원 탈퇴 실패 후 FCM 기기 토큰 복구 실패:",
+          registrationError,
+        );
+      }
+
       const message =
         error instanceof Error
           ? error.message
@@ -304,6 +331,9 @@ export default function Mypage() {
   const handlePressNoticePage = () => {
     router.push("/notice");
   };
+  const handlePressNotificationSettings = () => {
+    router.push("/mypage/notifications");
+  };
   return (
     <ImageBackground
       source={require("../../assets/images/Background.png")}
@@ -311,6 +341,16 @@ export default function Mypage() {
       className="flex-1"
     >
       <View className="flex-1 px-12 pt-24">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="알림 설정 열기"
+          hitSlop={8}
+          onPress={handlePressNotificationSettings}
+          className="absolute right-8 top-16 z-10 h-11 w-11 items-center justify-center "
+        >
+          <Bell size={24} color={PRIMARY} strokeWidth={2.5} />
+        </Pressable>
+
         {/* 프로필 */}
         <View className="mb-12 flex-row items-center">
           <Pressable
@@ -522,7 +562,9 @@ export default function Mypage() {
         availableProfileIds={availableProfileIds}
         saving={isSavingProfileImage}
         onSelect={setDraftProfileImageId}
-        onClose={() => { if (!isSavingProfileImage) setIsProfileImageModalOpen(false); }}
+        onClose={() => {
+          if (!isSavingProfileImage) setIsProfileImageModalOpen(false);
+        }}
         onConfirm={handleSaveProfileImage}
       />
       <AttendanceStatusModal
